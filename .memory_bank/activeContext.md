@@ -1,38 +1,40 @@
 ﻿# Active Context
 
 ## Текущие задачи
-1. Завершить ревью соответствия MVP к ТЗ после внесённых правок.
-2. Выполнить ручной smoke в Unity Editor.
-3. Подготовить PR с ветки `feat/tz-alignment`.
+1. Устранить компиляционные ошибки UI Toolkit API-совместимости в `BoardCanvasElement`.
+2. Проверить отсутствие вызовов недоступных API (`WorldToLocal`, `CapturePointer`, `ReleasePointer`, `HasPointerCapture`) в целевом файле.
+3. Зафиксировать hotfix в отдельной ветке и запушить.
 
 ## Последние изменения
-- Исправлен duplicate board: сохранение связей `item.groupId` через remap старых/новых `group.id`.
-- Добавлен drag-over ghost preview при `Project -> Canvas`.
-- `Home` в toolbar переключён на `ResetView`.
-- Исправлено `Add To Group` из контекстного меню карточки: действие корректно таргетирует карточку под курсором (или текущую selection, если она включает карточку).
-- Обновлён `local/README.md` по контрактам поведения.
+- В `BoardCanvasElement` заменены несовместимые вызовы событий/координат:
+  - `WheelEvent`: `evt.position` -> `evt.localMousePosition`
+  - `Pointer*Event`: использование `evt.localPosition`
+  - `Drag*Event`: `evt.localMousePosition`
+- Захват указателя переведён на совместимый API:
+  - `CapturePointer` -> `CaptureMouse`
+  - `HasPointerCapture/ReleasePointer` -> `HasMouseCapture/ReleaseMouse`
+- Для drag карточки/группы использована конвертация координат в Canvas:
+  - `ChangeCoordinatesTo(this, evt.localPosition)`
 
 ## Следующие шаги
-1. Проверить smoke в Unity: duplicate board/groups, drag ghost, Home reset, Add To Group.
-2. Проверить отсутствие новых компиляционных ошибок.
-3. Выполнить merge в рабочую ветку после подтверждения.
+1. Проверить сборку в Unity Editor.
+2. Проверить интеракции drag/select/group move в UI.
+3. После подтверждения — merge hotfix в рабочую ветку.
 
 ## План (REQUIREMENTS_OWNER)
-1. Закрыть все найденные функциональные gap'ы без расширения MVP scope.
-2. Зафиксировать обновлённые архитектурные и поведенческие контракты в README.
-3. Завершить задачу commit+push.
+1. Внести минимальный совместимый фикс только в UI-слое.
+2. Не менять UX-контракты и поведение MVP.
+3. Обновить Memory Bank и выполнить push.
 
 ## Стратегия (ARCHITECT)
-- Изменения локализованы в существующих слоях (`Services`, `UI`, `Styles`), архитектура не менялась.
-- Контракты данных/координат сохранены.
-- UX улучшения (ghost, Home reset) реализованы минимально-инвазивно.
+- Изменения локализованы в `BoardCanvasElement`.
+- Архитектурные слои `Data/Services/UI` не менялись.
+- Контракты данных и сохранения состояния не затронуты.
 
 ## REVIEWER checklist
-- `DuplicateBoard` не теряет group linkage.
-- `Home` соответствует reset-view.
-- `Add To Group` корректен для контекстной карточки.
-- Drag-over ghost отображается только для валидного prefab drag.
+- Нет вызовов несовместимых API в `BoardCanvasElement`.
+- Логика pan/zoom/dnd/selection сохранена.
+- Нет изменений в моделях данных.
 
 ## QA_TESTER заметки
-- Автотестов нет.
-- Нужен ручной smoke в Unity Editor по обновлённым сценариям.
+- Нужен ручной smoke в Unity 2021.3+: compile + pan/zoom + drag/drop + context actions.

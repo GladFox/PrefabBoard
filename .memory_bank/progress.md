@@ -1,24 +1,21 @@
 ﻿# Progress
 
 ## Что работает
-- Реализован EditorWindow `Prefab Board` на UI Toolkit.
-- Реализованы доски, карточки, группы, drag&drop, поиск и базовые операции MVP.
-- Закрыты ключевые несоответствия ТЗ:
-  - duplicate board сохраняет связи карточек с группами
-  - `Home` в toolbar выполняет reset view
-  - `Add To Group` из контекстного меню карточки таргетирует корректные карточки
-  - drag-over для `Project -> Canvas` показывает ghost preview
-- Сохранён hotfix совместимости UI Toolkit API для контекстного меню (`RegisterCallback<ContextualMenuPopulateEvent>`).
+- Реализован MVP Prefab Board (EditorWindow + UI Toolkit).
+- Закрыты ключевые функциональные несоответствия ТЗ (duplicate-group links, Home reset, card add-to-group targeting, drag ghost).
+- Добавлен compatibility hotfix для Unity API в `BoardCanvasElement`:
+  - совместимые локальные координаты событий
+  - совместимый захват/освобождение мыши
 
 ## Известные проблемы
 - Ручной smoke в Unity Editor ещё не выполнен в этой среде.
-- Внешний drag в Scene/Hierarchy для MVP завязан на `Ctrl+LMB` (осознанный компромисс).
+- Внешний drag в Scene/Hierarchy для MVP завязан на `Ctrl+LMB`.
 - Resize handles для групп не реализованы (вне текущего MVP).
 
 ## Развитие решений
-- Исправления внесены точечно без изменения архитектурного деления `Data/Services/UI`.
-- Архитектурные контракты и UX-решения синхронизированы в `local/README.md`.
+- Совместимость UI Toolkit усилена без изменения модели данных.
+- Исправления точечные и не затрагивают архитектурное деление проекта.
 
 ## Контроль изменений
-- last_checked_commit: 7e7a4381a31738335a6108021946b8cd8d410270
+- last_checked_commit: 6f08a450e1e276a106acd1fd5f31669410164881
 - last_checked_date: 2026-02-25
