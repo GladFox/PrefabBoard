@@ -1,22 +1,26 @@
 ﻿# Progress
 
 ## Что работает
-- Реализован MVP Prefab Board (EditorWindow + UI Toolkit).
-- Закрыты ключевые функциональные несоответствия ТЗ.
-- Выполнен двухэтапный hotfix совместимости UI Toolkit для `BoardCanvasElement`:
-  - событие-координаты нормализованы в `Vector2`
-  - удалены несовместимые вызовы pointer-capture API
-  - сохранена логика drag/zoom/pan с корректной конвертацией координат
+- MVP Prefab Board функционирует (канвас, pan/zoom, карточки, группы, dnd, multi-board).
+- Исправлена совместимость `BoardCanvasElement` с API UI Toolkit в Unity 2021.3+.
+- Добавлен custom preview pipeline для uGUI prefab:
+  - рендер через временный Canvas/Camera в preview scene;
+  - fallback к `AssetPreview` для остальных prefab;
+  - кэш custom preview с очисткой ресурсов.
+- Исправлен race в превью-кэше: mini thumbnail не фиксируется в кэше, пока `AssetPreview` в состоянии loading.
 
 ## Известные проблемы
-- Ручной smoke в Unity Editor ещё не выполнен в этой среде.
-- Внешний drag в Scene/Hierarchy для MVP завязан на `Ctrl+LMB`.
-- Resize handles для групп не реализованы (вне текущего MVP).
+- Нет автоматизированного integration-теста preview в Unity Editor.
+- Для сложных UI prefab с нестандартной иерархией может потребоваться дополнительная подстройка framing.
+- Внешний drag в Scene/Hierarchy для MVP остаётся на `Ctrl+LMB`.
 
 ## Развитие решений
-- Совместимость UI Toolkit усилена без изменения Data/Services слоя.
-- Исправления точечные и ориентированы на широкий диапазон Unity API.
+- Preview система эволюционировала от чистого `AssetPreview` к гибридной схеме:
+  1. UI fallback (Canvas+Camera),
+  2. стандартный `AssetPreview`,
+  3. mini/icon fallback.
+- Улучшена визуальная предсказуемость карточек для UI-контента.
 
 ## Контроль изменений
-- last_checked_commit: dd96764183c92b03c72e432b7e0526df25edc000
+- last_checked_commit: 25eec60c50d58f99e269b28336a7eb5179ac811d
 - last_checked_date: 2026-02-25
