@@ -101,6 +101,7 @@ namespace PrefabBoard.Editor.Services
             duplicate.boardId = Guid.NewGuid().ToString("N");
             duplicate.boardName = source.boardName + " Copy";
 
+            var groupIdMap = new Dictionary<string, string>();
             foreach (var item in duplicate.items)
             {
                 item.id = Guid.NewGuid().ToString("N");
@@ -108,7 +109,30 @@ namespace PrefabBoard.Editor.Services
 
             foreach (var group in duplicate.groups)
             {
-                group.id = Guid.NewGuid().ToString("N");
+                var oldId = group.id;
+                var newId = Guid.NewGuid().ToString("N");
+                group.id = newId;
+                if (!string.IsNullOrEmpty(oldId))
+                {
+                    groupIdMap[oldId] = newId;
+                }
+            }
+
+            foreach (var item in duplicate.items)
+            {
+                if (string.IsNullOrEmpty(item.groupId))
+                {
+                    continue;
+                }
+
+                if (groupIdMap.TryGetValue(item.groupId, out var mappedGroupId))
+                {
+                    item.groupId = mappedGroupId;
+                }
+                else
+                {
+                    item.groupId = string.Empty;
+                }
             }
 
             var safeName = SanitizeFileName(duplicate.boardName);

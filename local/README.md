@@ -1,7 +1,7 @@
 ﻿# PrefabBoard Architecture
 
 ## Status
-MVP implementation in progress (`feature/prefab-board-mvp`).
+MVP implementation in progress (`feat/tz-alignment`).
 
 ## Scope
 Editor-only инструмент `Prefab Board` на Unity UI Toolkit:
@@ -77,10 +77,14 @@ Zoom-to-cursor реализован через фиксацию точки по�
 - `Ctrl+LMB` на карточке: внешний drag в Scene/Hierarchy
 - `MMB` или `Space + LMB`: pan
 - `Mouse wheel`: zoom to cursor
+- `Home` в toolbar: reset view (`pan=0`, `zoom=1`)
 - `Delete/Backspace`: удалить выделение
 - `Ctrl/Cmd + D`: дублировать выбранные карточки
 - `F`: frame selection
 - Box selection: drag по пустому месту
+- `Project -> Canvas` drag-over: ghost preview позиции добавления
+- `Add To Group` в контекстном меню карточки:
+  если карточка в selection — применяется к selection, иначе к карточке под курсором
 
 ## Persistence and Undo
 Изменения данных выполняются через:
@@ -88,6 +92,10 @@ Zoom-to-cursor реализован через фиксацию точки по�
 - `EditorUtility.SetDirty(...)`
 
 Состояние хранится в ScriptableObject-ассетах, без создания runtime GameObject для карточек/групп.
+
+## Data Consistency
+- При duplicate board ID групп пересоздаются, а `item.groupId` ремапится на новые group IDs.
+- Если исходная группа не может быть сопоставлена, у дубликата `item.groupId` очищается.
 
 ## Known MVP Limits
 - Внешний drag для инстанса префаба сделан через `Ctrl+LMB` (чтобы не конфликтовать с внутренним перемещением).

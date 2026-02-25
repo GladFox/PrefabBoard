@@ -134,3 +134,20 @@
     border-bottom-color: rgba(90, 170, 255, 0.95);
     background-color: rgba(90, 170, 255, 0.15);
 }
+
+.pb-drag-ghost {
+    position: absolute;
+    border-left-width: 1px;
+    border-right-width: 1px;
+    border-top-width: 1px;
+    border-bottom-width: 1px;
+    border-left-color: rgba(104, 196, 120, 0.95);
+    border-right-color: rgba(104, 196, 120, 0.95);
+    border-top-color: rgba(104, 196, 120, 0.95);
+    border-bottom-color: rgba(104, 196, 120, 0.95);
+    background-color: rgba(104, 196, 120, 0.18);
+    border-top-left-radius: 5px;
+    border-top-right-radius: 5px;
+    border-bottom-left-radius: 5px;
+    border-bottom-right-radius: 5px;
+}

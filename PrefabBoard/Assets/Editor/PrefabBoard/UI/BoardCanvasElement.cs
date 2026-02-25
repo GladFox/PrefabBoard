@@ -17,6 +17,7 @@ namespace PrefabBoard.Editor.UI
         private readonly VisualElement _itemsLayer;
         private readonly VisualElement _overlayLayer;
         private readonly SelectionOverlayElement _selectionOverlay;
+        private readonly VisualElement _dragGhost;
 
         private readonly Dictionary<string, PrefabCardElement> _cards = new Dictionary<string, PrefabCardElement>();
         private readonly Dictionary<string, GroupFrameElement> _groups = new Dictionary<string, GroupFrameElement>();
@@ -47,7 +48,12 @@ namespace PrefabBoard.Editor.UI
             _itemsLayer = CreateLayer("pb-layer-items", true);
             _overlayLayer = CreateLayer("pb-layer-overlay", false);
             _selectionOverlay = new SelectionOverlayElement();
+            _dragGhost = new VisualElement();
+            _dragGhost.AddToClassList("pb-drag-ghost");
+            _dragGhost.style.display = DisplayStyle.None;
+            _dragGhost.pickingMode = PickingMode.Ignore;
             _overlayLayer.Add(_selectionOverlay);
+            _overlayLayer.Add(_dragGhost);
 
             Add(_groupsLayer);
             Add(_itemsLayer);
@@ -178,7 +184,9 @@ namespace PrefabBoard.Editor.UI
             _itemsLayer.Clear();
             _overlayLayer.Clear();
             _overlayLayer.Add(_selectionOverlay);
+            _overlayLayer.Add(_dragGhost);
             _selectionOverlay.SetVisible(false);
+            HideDragGhost();
             _cards.Clear();
             _groups.Clear();
 
@@ -264,6 +272,7 @@ namespace PrefabBoard.Editor.UI
         private void OnPointerDown(PointerDownEvent evt)
         {
             if (_board == null) return;
+            HideDragGhost();
             Focus();
             var mouse = WorldToLocal(evt.position);
 
@@ -402,7 +411,17 @@ namespace PrefabBoard.Editor.UI
         private void OnDragUpdated(DragUpdatedEvent evt)
         {
             if (_board == null) return;
-            DragAndDrop.visualMode = HasDraggedPrefabs() ? DragAndDropVisualMode.Copy : DragAndDropVisualMode.Rejected;
+            var hasPrefabs = HasDraggedPrefabs();
+            DragAndDrop.visualMode = hasPrefabs ? DragAndDropVisualMode.Copy : DragAndDropVisualMode.Rejected;
+            if (hasPrefabs)
+            {
+                var localMouse = WorldToLocal(evt.mousePosition);
+                UpdateDragGhost(localMouse);
+            }
+            else
+            {
+                HideDragGhost();
+            }
             evt.StopPropagation();
         }
 
@@ -410,6 +429,7 @@ namespace PrefabBoard.Editor.UI
         {
             if (_board == null || !HasDraggedPrefabs()) return;
 
+            HideDragGhost();
             var world = ScreenToWorld(WorldToLocal(evt.mousePosition));
             var added = new List<string>();
             var offset = 0;
@@ -486,13 +506,14 @@ namespace PrefabBoard.Editor.UI
             evt.menu.AppendAction("Delete", _ => DeleteCards(new[] { card.ItemId }), DropdownMenuAction.AlwaysEnabled);
             evt.menu.AppendSeparator();
             evt.menu.AppendAction("Create Group From Selection", _ => CreateGroupFromSelection(), DropdownMenuAction.AlwaysEnabled);
+            var contextTargetIds = GetContextTargetItemIds(card.ItemId);
             foreach (var g in _board.groups)
             {
                 var gid = g.id;
                 var name = string.IsNullOrWhiteSpace(g.name) ? "Group" : g.name;
-                evt.menu.AppendAction($"Add To Group/{name}", _ => AddSelectedToGroup(gid), DropdownMenuAction.AlwaysEnabled);
+                evt.menu.AppendAction($"Add To Group/{name}", _ => AddItemsToGroup(contextTargetIds, gid), DropdownMenuAction.AlwaysEnabled);
             }
-            evt.menu.AppendAction("Add To Group/None", _ => AddSelectedToGroup(string.Empty), DropdownMenuAction.AlwaysEnabled);
+            evt.menu.AppendAction("Add To Group/None", _ => AddItemsToGroup(contextTargetIds, string.Empty), DropdownMenuAction.AlwaysEnabled);
         }
 
         private void OnGroupPointerDown(GroupFrameElement groupElement, PointerDownEvent evt)
@@ -671,15 +692,33 @@ namespace PrefabBoard.Editor.UI
 
         private void AddSelectedToGroup(string groupId)
         {
-            if (_board == null || _selectedItems.Count == 0) return;
+            AddItemsToGroup(_selectedItems, groupId);
+        }
+
+        private void AddItemsToGroup(IEnumerable<string> itemIds, string groupId)
+        {
+            if (_board == null) return;
+            var ids = new HashSet<string>(itemIds ?? Array.Empty<string>());
+            if (ids.Count == 0) return;
+
             BoardUndo.Record(_board, "Assign Group");
-            foreach (var id in _selectedItems)
+            foreach (var id in ids)
             {
                 var item = FindItem(id);
                 if (item != null) item.groupId = groupId;
             }
             BoardUndo.MarkDirty(_board);
             RefreshVisualState();
+        }
+
+        private IEnumerable<string> GetContextTargetItemIds(string contextItemId)
+        {
+            if (_selectedItems.Contains(contextItemId))
+            {
+                return _selectedItems.ToArray();
+            }
+
+            return new[] { contextItemId };
         }
 
         private void PingCard(string id)
@@ -771,6 +810,26 @@ namespace PrefabBoard.Editor.UI
             _dragStartItemPos.Clear();
             _dragStartGroupItemPos.Clear();
             _selectionOverlay.SetVisible(false);
+            HideDragGhost();
+        }
+
+        private void UpdateDragGhost(Vector2 mouseScreen)
+        {
+            if (_board == null) return;
+
+            var previewSizeWorld = new Vector2(220f, 120f);
+            var previewSizeScreen = previewSizeWorld * Mathf.Max(0.2f, _board.zoom);
+
+            _dragGhost.style.left = mouseScreen.x + 12f;
+            _dragGhost.style.top = mouseScreen.y + 12f;
+            _dragGhost.style.width = Mathf.Max(64f, previewSizeScreen.x * 0.5f);
+            _dragGhost.style.height = Mathf.Max(36f, previewSizeScreen.y * 0.5f);
+            _dragGhost.style.display = DisplayStyle.Flex;
+        }
+
+        private void HideDragGhost()
+        {
+            _dragGhost.style.display = DisplayStyle.None;
         }
 
         private static Rect RectFromPoints(Vector2 a, Vector2 b)

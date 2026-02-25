@@ -56,7 +56,7 @@ namespace PrefabBoard.Editor.UI
             _toolbar.RenameBoardRequested += OnRenameBoard;
             _toolbar.DeleteBoardRequested += OnDeleteBoard;
             _toolbar.CreateGroupRequested += () => _canvas.CreateGroupFromSelection();
-            _toolbar.HomeRequested += () => _canvas.FrameSelection();
+            _toolbar.HomeRequested += () => _canvas.ResetView();
             _toolbar.SearchChanged += value => _canvas.SetSearchQuery(value);
             _toolbar.GridToggled += value => _canvas.SetGridEnabled(value);
             _toolbar.SnapToggled += value => _canvas.SetSnapEnabled(value);
