@@ -256,7 +256,7 @@ namespace PrefabBoard.Editor.UI
         private void OnWheel(WheelEvent evt)
         {
             if (_board == null) return;
-            var mouse = evt.localMousePosition;
+            var mouse = new Vector2(evt.localMousePosition.x, evt.localMousePosition.y);
             var before = ScreenToWorld(mouse);
             var zoom = Mathf.Clamp(_board.zoom * Mathf.Exp(-evt.delta.y * 0.05f), MinZoom, MaxZoom);
             if (Mathf.Approximately(zoom, _board.zoom)) return;
@@ -274,7 +274,7 @@ namespace PrefabBoard.Editor.UI
             if (_board == null) return;
             HideDragGhost();
             Focus();
-            var mouse = evt.localPosition;
+            var mouse = new Vector2(evt.localPosition.x, evt.localPosition.y);
 
             if (evt.button == 2 || (_spacePressed && evt.button == 0))
             {
@@ -282,7 +282,6 @@ namespace PrefabBoard.Editor.UI
                 _pointerId = evt.pointerId;
                 _mouseStart = mouse;
                 _panStart = _board.pan;
-                CaptureMouse();
                 evt.StopPropagation();
                 return;
             }
@@ -300,7 +299,6 @@ namespace PrefabBoard.Editor.UI
             _mouseStart = mouse;
             _selectionOverlay.SetRect(new Rect(mouse, Vector2.zero));
             _selectionOverlay.SetVisible(true);
-            CaptureMouse();
             RefreshVisualState();
             evt.StopPropagation();
         }
@@ -308,7 +306,7 @@ namespace PrefabBoard.Editor.UI
         private void OnPointerMove(PointerMoveEvent evt)
         {
             if (_board == null || evt.pointerId != _pointerId) return;
-            var mouse = evt.localPosition;
+            var mouse = new Vector2(evt.localPosition.x, evt.localPosition.y);
             var world = ScreenToWorld(mouse);
 
             if (_mode == Mode.Panning)
@@ -367,7 +365,7 @@ namespace PrefabBoard.Editor.UI
 
             if (_mode == Mode.BoxSelect)
             {
-                var rect = RectFromPoints(_mouseStart, evt.localPosition);
+                var rect = RectFromPoints(_mouseStart, new Vector2(evt.localPosition.x, evt.localPosition.y));
                 _selectionOverlay.SetVisible(false);
                 if (rect.width >= 6f || rect.height >= 6f)
                 {
@@ -415,7 +413,7 @@ namespace PrefabBoard.Editor.UI
             DragAndDrop.visualMode = hasPrefabs ? DragAndDropVisualMode.Copy : DragAndDropVisualMode.Rejected;
             if (hasPrefabs)
             {
-                var localMouse = evt.localMousePosition;
+                var localMouse = new Vector2(evt.localMousePosition.x, evt.localMousePosition.y);
                 UpdateDragGhost(localMouse);
             }
             else
@@ -430,7 +428,7 @@ namespace PrefabBoard.Editor.UI
             if (_board == null || !HasDraggedPrefabs()) return;
 
             HideDragGhost();
-            var world = ScreenToWorld(evt.localMousePosition);
+            var world = ScreenToWorld(new Vector2(evt.localMousePosition.x, evt.localMousePosition.y));
             var added = new List<string>();
             var offset = 0;
 
@@ -471,9 +469,10 @@ namespace PrefabBoard.Editor.UI
 
             _mode = Mode.DragItems;
             _pointerId = evt.pointerId;
-            _dragWorldStart = ScreenToWorld(card.ChangeCoordinatesTo(this, evt.localPosition));
+            var pointerOnCard = new Vector2(evt.localPosition.x, evt.localPosition.y);
+            var canvasPointer = card.ChangeCoordinatesTo(this, pointerOnCard);
+            _dragWorldStart = ScreenToWorld(new Vector2(canvasPointer.x, canvasPointer.y));
             BoardUndo.Record(_board, "Move Cards");
-            CaptureMouse();
             RefreshVisualState();
         }
 
@@ -534,11 +533,12 @@ namespace PrefabBoard.Editor.UI
             }
 
             _dragGroupRectStart = group.rect;
-            _dragWorldStart = ScreenToWorld(groupElement.ChangeCoordinatesTo(this, evt.localPosition));
+            var pointerOnGroup = new Vector2(evt.localPosition.x, evt.localPosition.y);
+            var canvasPointer = groupElement.ChangeCoordinatesTo(this, pointerOnGroup);
+            _dragWorldStart = ScreenToWorld(new Vector2(canvasPointer.x, canvasPointer.y));
             _mode = Mode.DragGroup;
             _pointerId = evt.pointerId;
             BoardUndo.Record(_board, "Move Group");
-            CaptureMouse();
             RefreshVisualState();
         }
 
@@ -803,7 +803,6 @@ namespace PrefabBoard.Editor.UI
 
         private void ClearDragState()
         {
-            if (_pointerId != -1 && HasMouseCapture()) ReleaseMouse();
             _mode = Mode.None;
             _pointerId = -1;
             _draggingGroupId = null;
@@ -856,4 +855,6 @@ namespace PrefabBoard.Editor.UI
         }
     }
 }
+
+
 

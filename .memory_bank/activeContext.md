@@ -1,40 +1,36 @@
 ﻿# Active Context
 
 ## Текущие задачи
-1. Устранить компиляционные ошибки UI Toolkit API-совместимости в `BoardCanvasElement`.
-2. Проверить отсутствие вызовов недоступных API (`WorldToLocal`, `CapturePointer`, `ReleasePointer`, `HasPointerCapture`) в целевом файле.
-3. Зафиксировать hotfix в отдельной ветке и запушить.
+1. Закрыть остаточные compile-ошибки совместимости `BoardCanvasElement` на старом UI Toolkit API.
+2. Проверить отсутствие недоступных методов pointer capture и конфликтов `Vector3/Vector2`.
+3. Зафиксировать дополнительный hotfix и push.
 
 ## Последние изменения
-- В `BoardCanvasElement` заменены несовместимые вызовы событий/координат:
-  - `WheelEvent`: `evt.position` -> `evt.localMousePosition`
-  - `Pointer*Event`: использование `evt.localPosition`
-  - `Drag*Event`: `evt.localMousePosition`
-- Захват указателя переведён на совместимый API:
-  - `CapturePointer` -> `CaptureMouse`
-  - `HasPointerCapture/ReleasePointer` -> `HasMouseCapture/ReleaseMouse`
-- Для drag карточки/группы использована конвертация координат в Canvas:
-  - `ChangeCoordinatesTo(this, evt.localPosition)`
+- На предыдущем шаге добавлен compatibility hotfix (`dd96764`).
+- Дополнительно выполнена правка событийной математики:
+  - явная нормализация event-позиций в `Vector2`
+  - удалены вызовы недоступного pointer-capture API (`CaptureMouse/ReleaseMouse/HasMouseCapture`)
+  - сохранена координатная конверсия через `ChangeCoordinatesTo` с нормализацией координат
 
 ## Следующие шаги
-1. Проверить сборку в Unity Editor.
-2. Проверить интеракции drag/select/group move в UI.
-3. После подтверждения — merge hotfix в рабочую ветку.
+1. Проверить компиляцию в Unity Editor.
+2. Ручной smoke сценариев Canvas (pan/zoom/drag/group move).
+3. После подтверждения — merge hotfix.
 
 ## План (REQUIREMENTS_OWNER)
-1. Внести минимальный совместимый фикс только в UI-слое.
-2. Не менять UX-контракты и поведение MVP.
+1. Внести минимальные правки только для compile compatibility.
+2. Не менять функциональные контракты MVP.
 3. Обновить Memory Bank и выполнить push.
 
 ## Стратегия (ARCHITECT)
-- Изменения локализованы в `BoardCanvasElement`.
-- Архитектурные слои `Data/Services/UI` не менялись.
-- Контракты данных и сохранения состояния не затронуты.
+- Изменения локализованы только в `BoardCanvasElement`.
+- Архитектура слоёв и data contracts не изменены.
+- Для максимальной совместимости удалён hard dependency на pointer capture API.
 
 ## REVIEWER checklist
-- Нет вызовов несовместимых API в `BoardCanvasElement`.
-- Логика pan/zoom/dnd/selection сохранена.
-- Нет изменений в моделях данных.
+- В файле отсутствуют `CaptureMouse/ReleaseMouse/HasMouseCapture`.
+- В файле отсутствуют `WorldToLocal` и `evt.position`/`evt.mousePosition`.
+- Нет неоднозначных операций `Vector3 - Vector2`.
 
 ## QA_TESTER заметки
-- Нужен ручной smoke в Unity 2021.3+: compile + pan/zoom + drag/drop + context actions.
+- Нужен smoke в Unity 2021.3+ на сборку и базовые интеракции Canvas.

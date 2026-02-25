@@ -2,10 +2,11 @@
 
 ## Что работает
 - Реализован MVP Prefab Board (EditorWindow + UI Toolkit).
-- Закрыты ключевые функциональные несоответствия ТЗ (duplicate-group links, Home reset, card add-to-group targeting, drag ghost).
-- Добавлен compatibility hotfix для Unity API в `BoardCanvasElement`:
-  - совместимые локальные координаты событий
-  - совместимый захват/освобождение мыши
+- Закрыты ключевые функциональные несоответствия ТЗ.
+- Выполнен двухэтапный hotfix совместимости UI Toolkit для `BoardCanvasElement`:
+  - событие-координаты нормализованы в `Vector2`
+  - удалены несовместимые вызовы pointer-capture API
+  - сохранена логика drag/zoom/pan с корректной конвертацией координат
 
 ## Известные проблемы
 - Ручной smoke в Unity Editor ещё не выполнен в этой среде.
@@ -13,9 +14,9 @@
 - Resize handles для групп не реализованы (вне текущего MVP).
 
 ## Развитие решений
-- Совместимость UI Toolkit усилена без изменения модели данных.
-- Исправления точечные и не затрагивают архитектурное деление проекта.
+- Совместимость UI Toolkit усилена без изменения Data/Services слоя.
+- Исправления точечные и ориентированы на широкий диапазон Unity API.
 
 ## Контроль изменений
-- last_checked_commit: 6f08a450e1e276a106acd1fd5f31669410164881
+- last_checked_commit: dd96764183c92b03c72e432b7e0526df25edc000
 - last_checked_date: 2026-02-25
