@@ -1,0 +1,136 @@
+﻿.pb-toolbar {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    padding-left: 8px;
+    padding-right: 8px;
+    padding-top: 6px;
+    padding-bottom: 6px;
+    border-bottom-width: 1px;
+    border-bottom-color: rgba(255, 255, 255, 0.12);
+    background-color: rgb(38, 42, 49);
+}
+
+.pb-canvas {
+    flex-grow: 1;
+    background-color: rgb(26, 29, 35);
+}
+
+.pb-layer-groups,
+.pb-layer-items,
+.pb-layer-overlay {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+}
+
+.pb-group {
+    border-left-width: 2px;
+    border-right-width: 2px;
+    border-top-width: 2px;
+    border-bottom-width: 2px;
+    border-left-color: rgba(73, 176, 255, 0.8);
+    border-right-color: rgba(73, 176, 255, 0.8);
+    border-top-color: rgba(73, 176, 255, 0.8);
+    border-bottom-color: rgba(73, 176, 255, 0.8);
+    background-color: rgba(73, 176, 255, 0.10);
+}
+
+.pb-group-title {
+    height: 22px;
+    padding-left: 6px;
+    padding-right: 6px;
+    padding-top: 3px;
+    color: rgb(223, 237, 255);
+    unity-font-style: bold;
+    background-color: rgba(73, 176, 255, 0.25);
+}
+
+.pb-group--selected {
+    border-left-color: rgba(255, 210, 62, 0.95);
+    border-right-color: rgba(255, 210, 62, 0.95);
+    border-top-color: rgba(255, 210, 62, 0.95);
+    border-bottom-color: rgba(255, 210, 62, 0.95);
+}
+
+.pb-card {
+    border-left-width: 1px;
+    border-right-width: 1px;
+    border-top-width: 1px;
+    border-bottom-width: 1px;
+    border-left-color: rgba(255, 255, 255, 0.16);
+    border-right-color: rgba(255, 255, 255, 0.16);
+    border-top-color: rgba(255, 255, 255, 0.16);
+    border-bottom-color: rgba(255, 255, 255, 0.16);
+    border-top-left-radius: 6px;
+    border-top-right-radius: 6px;
+    border-bottom-left-radius: 6px;
+    border-bottom-right-radius: 6px;
+    background-color: rgb(44, 49, 58);
+    padding-left: 6px;
+    padding-right: 6px;
+    padding-top: 5px;
+    padding-bottom: 5px;
+}
+
+.pb-card-preview {
+    height: 64px;
+    width: auto;
+    margin-bottom: 4px;
+    unity-background-scale-mode: scale-to-fit;
+    background-color: rgba(255, 255, 255, 0.03);
+}
+
+.pb-card-title {
+    color: rgb(243, 243, 243);
+    unity-font-style: bold;
+    font-size: 11px;
+    -unity-text-align: upper-left;
+}
+
+.pb-card-note {
+    color: rgba(220, 220, 220, 0.85);
+    font-size: 10px;
+    white-space: normal;
+}
+
+.pb-card-missing {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    width: 10px;
+    height: 10px;
+    border-top-left-radius: 6px;
+    border-top-right-radius: 6px;
+    border-bottom-left-radius: 6px;
+    border-bottom-right-radius: 6px;
+    background-color: rgb(232, 66, 66);
+}
+
+.pb-card--selected {
+    border-left-color: rgb(255, 210, 62);
+    border-right-color: rgb(255, 210, 62);
+    border-top-color: rgb(255, 210, 62);
+    border-bottom-color: rgb(255, 210, 62);
+    background-color: rgb(58, 64, 75);
+}
+
+.pb-card--muted {
+    opacity: 0.4;
+}
+
+.pb-selection-overlay {
+    position: absolute;
+    border-left-width: 1px;
+    border-right-width: 1px;
+    border-top-width: 1px;
+    border-bottom-width: 1px;
+    border-left-color: rgba(90, 170, 255, 0.95);
+    border-right-color: rgba(90, 170, 255, 0.95);
+    border-top-color: rgba(90, 170, 255, 0.95);
+    border-bottom-color: rgba(90, 170, 255, 0.95);
+    background-color: rgba(90, 170, 255, 0.15);
+}

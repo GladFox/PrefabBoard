@@ -1,18 +1,95 @@
-﻿# PrefabBoard Architecture (Bootstrap)
+﻿# PrefabBoard Architecture
 
-## Статус
-Начальный baseline проекта, версия `v0.0.0`.
+## Status
+MVP implementation in progress (`feature/prefab-board-mvp`).
 
-## Структура репозитория
-- `PrefabBoard/` — Unity-проект.
-- `.memory_bank/` — контекст продукта, активная задача, прогресс.
-- `local/README.md` — источник правды по архитектуре.
+## Scope
+Editor-only инструмент `Prefab Board` на Unity UI Toolkit:
+- бесконечная 2D-доска с сеткой, pan и zoom
+- карточки префабов (данные в ScriptableObject)
+- группы (frames)
+- drag&drop `Project -> Canvas`
+- внешний drag карточки в `Scene/Hierarchy` для инстанса префаба
+- поддержка нескольких досок через библиотеку
 
-## Архитектурный scope v0.0.0
-- Прикладные модули ещё не выделены.
-- API, маршруты и интеграционные контракты отсутствуют на этапе bootstrap.
-- Фиксируется только инфраструктурная и документационная основа.
+## Repository Structure
+- `PrefabBoard/Assets/Editor/PrefabBoard/Data`
+  - `PrefabBoardAsset`
+  - `BoardItemData`
+  - `BoardGroupData`
+  - `BoardLibraryAsset`
+  - `BoardViewSettings`
+- `PrefabBoard/Assets/Editor/PrefabBoard/Services`
+  - `BoardRepository`
+  - `AssetGuidUtils`
+  - `PreviewCache`
+  - `BoardUndo`
+- `PrefabBoard/Assets/Editor/PrefabBoard/UI`
+  - `PrefabBoardWindow`
+  - `BoardCanvasElement`
+  - `PrefabCardElement`
+  - `GroupFrameElement`
+  - `SelectionOverlayElement`
+  - `BoardToolbarElement`
+- `PrefabBoard/Assets/Editor/PrefabBoard/Styles`
+  - `PrefabBoard.uss`
 
-## Правила изменений
-- Любые изменения архитектуры, API, маршрутов и модулей отражаются в этом файле.
-- При изменении документации и Memory Bank обновляется контроль изменений в `.memory_bank/progress.md`.
+## Data Model
+### PrefabBoardAsset
+Хранит состояние одной доски:
+- `boardId`, `boardName`
+- `pan` (пиксели Canvas)
+- `zoom` (масштаб)
+- `items`, `groups`
+- `viewSettings` (grid/snap/zoom limits)
+
+### BoardItemData
+Карточка префаба:
+- `id`, `prefabGuid`
+- `position`, `size` (world units)
+- `titleOverride`, `note`
+- `tagColor`, `tags`
+- `groupId`
+
+### BoardGroupData
+Группа/фрейм:
+- `id`, `name`
+- `rect` (world)
+- `color`, `zOrder`
+
+### BoardLibraryAsset
+Менеджер досок:
+- `boards`
+- `lastOpenedBoardId`
+
+## Coordinate Contract
+Сохранение позиций в world, навигация через `pan`/`zoom`:
+- `screen = world * zoom + panPx`
+- `world = (screen - panPx) / zoom`
+
+`pan` хранится в пикселях Canvas.
+`zoom` ограничен `viewSettings.minZoom .. viewSettings.maxZoom`.
+
+Zoom-to-cursor реализован через фиксацию точки под курсором при смене масштаба.
+
+## Interaction Contract
+- `LMB drag` на карточке: перемещение по доске
+- `Ctrl+LMB` на карточке: внешний drag в Scene/Hierarchy
+- `MMB` или `Space + LMB`: pan
+- `Mouse wheel`: zoom to cursor
+- `Delete/Backspace`: удалить выделение
+- `Ctrl/Cmd + D`: дублировать выбранные карточки
+- `F`: frame selection
+- Box selection: drag по пустому месту
+
+## Persistence and Undo
+Изменения данных выполняются через:
+- `Undo.RecordObject(...)`
+- `EditorUtility.SetDirty(...)`
+
+Состояние хранится в ScriptableObject-ассетах, без создания runtime GameObject для карточек/групп.
+
+## Known MVP Limits
+- Внешний drag для инстанса префаба сделан через `Ctrl+LMB` (чтобы не конфликтовать с внутренним перемещением).
+- Ресайз групп (handles) не включен в текущий MVP.
+- Preview зависит от `AssetPreview` и может догружаться асинхронно.

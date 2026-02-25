@@ -1,26 +1,38 @@
 ﻿# Active Context
 
 ## Текущие задачи
-1. Инициализировать Memory Bank.
-2. Создать `local/README.md` как source of truth по архитектуре.
-3. Нормализовать `.gitignore` для Unity-проекта в `PrefabBoard/`.
-4. Закоммитить все актуальные изменения и создать стартовый релиз `v0.0.0`.
+1. Завершить проверку MVP Prefab Board в Unity Editor (ручной smoke).
+2. Убедиться, что все элементы DoD из ТЗ закрыты или явно зафиксированы как ограничения.
+3. Подготовить итоговый commit и push ветки `feature/prefab-board-mvp`.
 
 ## Последние изменения
-- Добавлены базовые документы Memory Bank.
-- Добавлен `local/README.md` с описанием стартовой архитектуры.
-- Обновлён `.gitignore` для корректного исключения генерируемых Unity-артефактов.
+- Реализованы Data сущности: `PrefabBoardAsset`, `BoardItemData`, `BoardGroupData`, `BoardLibraryAsset`, `BoardViewSettings`.
+- Реализованы Services: `BoardRepository`, `AssetGuidUtils`, `PreviewCache`, `BoardUndo`.
+- Реализованы UI элементы: `PrefabBoardWindow`, `BoardCanvasElement`, `PrefabCardElement`, `GroupFrameElement`, `SelectionOverlayElement`, `BoardToolbarElement`.
+- Добавлены стили `PrefabBoard.uss`.
+- Обновлен `local/README.md` с архитектурными контрактами и текущими ограничениями MVP.
 
 ## Следующие шаги
-1. Получить и зафиксировать ТЗ.
-2. Определить системные паттерны и модули первого инкремента.
-3. Подготовить технический контекст реализации и roadmap.
+1. Проверить поведение окна и интеракций внутри Unity Editor.
+2. Обновить `progress.md` с результатами QA и known issues.
+3. Выполнить git commit + push.
 
 ## План (REQUIREMENTS_OWNER)
-1. Подготовить документационные артефакты bootstrap-этапа.
-2. Зафиксировать архитектурный baseline.
-3. Выполнить git commit + tag + push.
+1. Завершить реализацию MVP по вертикальному срезу (toolbar/canvas/cards/groups/dnd).
+2. Проверить соответствие DoD.
+3. Зафиксировать состояние в документации и git.
 
 ## Стратегия (ARCHITECT)
-- Архитектурно зафиксирован baseline без внедрения прикладной логики.
-- Изменения ограничены документацией и git-гигиеной.
+- Модель world/screen с хранением world-координат и `pan` в px сохранена.
+- Данные карточек/групп хранятся только в ScriptableObject.
+- Доски хранятся отдельными ассетами, библиотека хранит индекс и last-opened board.
+
+## REVIEWER checklist
+- Архитектурные слои Data/Services/UI разделены.
+- Изменения синхронизированы с `local/README.md`.
+- Memory Bank обновлён.
+- Новых внешних зависимостей не добавлено.
+
+## QA_TESTER заметки
+- Автоматические тесты отсутствуют.
+- Требуется ручная проверка в Unity Editor: pan/zoom/dnd/selection/groups/undo.
