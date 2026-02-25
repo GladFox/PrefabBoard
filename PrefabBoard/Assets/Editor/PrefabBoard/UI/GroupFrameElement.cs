@@ -24,7 +24,7 @@ namespace PrefabBoard.Editor.UI
             Add(_titleLabel);
 
             RegisterCallback<PointerDownEvent>(OnPointerDown);
-            AddManipulator(new ContextualMenuManipulator(OnPopulateContextMenu));
+            RegisterCallback<ContextualMenuPopulateEvent>(OnPopulateContextMenu);
         }
 
         public void Bind(BoardGroupData data, bool selected)

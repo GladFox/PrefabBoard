@@ -43,7 +43,7 @@ namespace PrefabBoard.Editor.UI
             Add(_missingIndicator);
 
             RegisterCallback<PointerDownEvent>(OnPointerDown);
-            AddManipulator(new ContextualMenuManipulator(OnPopulateContextMenu));
+            RegisterCallback<ContextualMenuPopulateEvent>(OnPopulateContextMenu);
         }
 
         public void Bind(BoardItemData item, string title, string note, Texture2D preview, bool missing, bool selected, bool highlighted)

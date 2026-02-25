@@ -1,38 +1,32 @@
 ﻿# Active Context
 
 ## Текущие задачи
-1. Завершить проверку MVP Prefab Board в Unity Editor (ручной smoke).
-2. Убедиться, что все элементы DoD из ТЗ закрыты или явно зафиксированы как ограничения.
-3. Подготовить итоговый commit и push ветки `feature/prefab-board-mvp`.
+1. Закрыть компиляционную ошибку UI Toolkit: `CS0103 The name 'AddManipulator' does not exist in the current context`.
+2. Проверить, что контекстное меню карточек и групп продолжает работать через `ContextualMenuPopulateEvent`.
+3. Зафиксировать hotfix в git и push в отдельную ветку.
 
 ## Последние изменения
-- Реализованы Data сущности: `PrefabBoardAsset`, `BoardItemData`, `BoardGroupData`, `BoardLibraryAsset`, `BoardViewSettings`.
-- Реализованы Services: `BoardRepository`, `AssetGuidUtils`, `PreviewCache`, `BoardUndo`.
-- Реализованы UI элементы: `PrefabBoardWindow`, `BoardCanvasElement`, `PrefabCardElement`, `GroupFrameElement`, `SelectionOverlayElement`, `BoardToolbarElement`.
-- Добавлены стили `PrefabBoard.uss`.
-- Обновлен `local/README.md` с архитектурными контрактами и текущими ограничениями MVP.
+- В `PrefabCardElement` и `GroupFrameElement` заменён вызов `AddManipulator(...)` на `RegisterCallback<ContextualMenuPopulateEvent>(...)` для совместимости API.
+- Выполнена проверка истории от `last_checked_commit`.
 
 ## Следующие шаги
-1. Проверить поведение окна и интеракций внутри Unity Editor.
-2. Обновить `progress.md` с результатами QA и known issues.
-3. Выполнить git commit + push.
+1. Проверить сборку в Unity Editor.
+2. Если сборка успешна — создать PR/слить hotfix в рабочую ветку.
 
 ## План (REQUIREMENTS_OWNER)
-1. Завершить реализацию MVP по вертикальному срезу (toolbar/canvas/cards/groups/dnd).
-2. Проверить соответствие DoD.
-3. Зафиксировать состояние в документации и git.
+1. Внести минимальный точечный фикс без изменения поведения UX.
+2. Сохранить обработчик контекстного меню.
+3. Обновить Memory Bank и выполнить push.
 
 ## Стратегия (ARCHITECT)
-- Модель world/screen с хранением world-координат и `pan` в px сохранена.
-- Данные карточек/групп хранятся только в ScriptableObject.
-- Доски хранятся отдельными ассетами, библиотека хранит индекс и last-opened board.
+- Изменение локализовано в UI-слое и не затрагивает Data/Services.
+- Поведение контекстного меню сохраняется, меняется только способ подписки на событие.
 
 ## REVIEWER checklist
-- Архитектурные слои Data/Services/UI разделены.
-- Изменения синхронизированы с `local/README.md`.
+- Нет архитектурных регрессий.
+- Нет новых зависимостей.
 - Memory Bank обновлён.
-- Новых внешних зависимостей не добавлено.
 
 ## QA_TESTER заметки
-- Автоматические тесты отсутствуют.
-- Требуется ручная проверка в Unity Editor: pan/zoom/dnd/selection/groups/undo.
+- Проверить, что ошибка компиляции исчезла.
+- Проверить RMB-контекстное меню у карточек и групп.
