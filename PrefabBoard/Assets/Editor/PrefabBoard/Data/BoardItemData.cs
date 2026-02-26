@@ -3,6 +3,13 @@ using UnityEngine;
 
 namespace PrefabBoard.Editor.Data
 {
+    public enum BoardItemPreviewRenderMode
+    {
+        Auto = 0,
+        Resolution = 1,
+        ControlSize = 2
+    }
+
     [Serializable]
     public sealed class BoardItemData
     {
@@ -15,6 +22,7 @@ namespace PrefabBoard.Editor.Data
         public Color tagColor = Color.clear;
         public string[] tags;
         public string groupId;
+        public BoardItemPreviewRenderMode previewRenderMode = BoardItemPreviewRenderMode.Auto;
 
         public static BoardItemData Create(string prefabGuid, Vector2 position)
         {
@@ -23,7 +31,8 @@ namespace PrefabBoard.Editor.Data
                 id = Guid.NewGuid().ToString("N"),
                 prefabGuid = prefabGuid,
                 position = position,
-                size = new Vector2(220f, 120f)
+                size = new Vector2(220f, 120f),
+                previewRenderMode = BoardItemPreviewRenderMode.Auto
             };
         }
     }

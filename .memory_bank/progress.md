@@ -1,26 +1,27 @@
 ﻿# Progress
 
 ## Что работает
-- MVP Prefab Board функционирует (канвас, pan/zoom, карточки, группы, dnd, multi-board).
-- Исправлена совместимость `BoardCanvasElement` с API UI Toolkit в Unity 2021.3+.
-- Добавлен custom preview pipeline для uGUI prefab:
-  - рендер через временный Canvas/Camera в preview scene;
-  - fallback к `AssetPreview` для остальных prefab;
-  - кэш custom preview с очисткой ресурсов.
-- Исправлен race в превью-кэше: mini thumbnail не фиксируется в кэше, пока `AssetPreview` в состоянии loading.
+- MVP Prefab Board функционирует (canvas, pan/zoom, карточки, группы, dnd, multi-board).
+- Для UI prefab работает custom preview через `Canvas+Camera` fallback.
+- Добавлены режимы рендера preview на уровне элемента доски:
+  - `Auto`
+  - `Resolution`
+  - `Control Size`
+- Добавлена кнопка-переключатель режима на карточке (`A/R/C`) с сохранением в `BoardItemData`.
+- Режим preview копируется при дублировании карточек.
+- Кэш preview теперь учитывает режим и размер холста (`prefabGuid + mode + canvasSize`).
 
 ## Известные проблемы
 - Нет автоматизированного integration-теста preview в Unity Editor.
-- Для сложных UI prefab с нестандартной иерархией может потребоваться дополнительная подстройка framing.
+- Поведение `Auto` основано на эвристике stretch rect и может требовать тонкой подстройки для нестандартных иерархий UI.
 - Внешний drag в Scene/Hierarchy для MVP остаётся на `Ctrl+LMB`.
 
 ## Развитие решений
-- Preview система эволюционировала от чистого `AssetPreview` к гибридной схеме:
-  1. UI fallback (Canvas+Camera),
-  2. стандартный `AssetPreview`,
-  3. mini/icon fallback.
-- Улучшена визуальная предсказуемость карточек для UI-контента.
+- Preview система расширена до параметризованной схемы рендера с персистентным per-item режимом.
+- Инвалидация кэша расширена: удаляются все варианты preview одного prefab при изменении режима.
+- Проверка изменений после `last_checked_commit` выполнена:
+  - `git log 25eec60...HEAD` -> `aaa128f feat(editor): add canvas fallback preview for UI prefabs`.
 
 ## Контроль изменений
-- last_checked_commit: 25eec60c50d58f99e269b28336a7eb5179ac811d
-- last_checked_date: 2026-02-25
+- last_checked_commit: aaa128f
+- last_checked_date: 2026-02-26

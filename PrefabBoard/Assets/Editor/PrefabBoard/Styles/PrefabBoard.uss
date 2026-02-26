@@ -110,6 +110,34 @@
     background-color: rgb(232, 66, 66);
 }
 
+.pb-card-render-mode {
+    position: absolute;
+    left: 6px;
+    top: 6px;
+    width: 20px;
+    height: 18px;
+    padding-left: 0;
+    padding-right: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+    font-size: 9px;
+    unity-font-style: bold;
+    color: rgb(230, 238, 245);
+    background-color: rgba(18, 21, 26, 0.72);
+    border-left-width: 1px;
+    border-right-width: 1px;
+    border-top-width: 1px;
+    border-bottom-width: 1px;
+    border-left-color: rgba(255, 255, 255, 0.26);
+    border-right-color: rgba(255, 255, 255, 0.26);
+    border-top-color: rgba(255, 255, 255, 0.26);
+    border-bottom-color: rgba(255, 255, 255, 0.26);
+    border-top-left-radius: 3px;
+    border-top-right-radius: 3px;
+    border-bottom-left-radius: 3px;
+    border-bottom-right-radius: 3px;
+}
+
 .pb-card--selected {
     border-left-color: rgb(255, 210, 62);
     border-right-color: rgb(255, 210, 62);

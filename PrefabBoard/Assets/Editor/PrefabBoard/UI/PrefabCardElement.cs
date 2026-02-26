@@ -11,12 +11,14 @@ namespace PrefabBoard.Editor.UI
         private readonly Label _titleLabel;
         private readonly Label _noteLabel;
         private readonly VisualElement _missingIndicator;
+        private readonly Button _renderModeButton;
 
         public string ItemId { get; }
 
         public event Action<PrefabCardElement, PointerDownEvent> PrimaryPointerDown;
         public event Action<PrefabCardElement> DoubleClicked;
         public event Action<PrefabCardElement> ExternalDragRequested;
+        public event Action<PrefabCardElement> RenderModeToggleRequested;
         public event Action<PrefabCardElement, ContextualMenuPopulateEvent> ContextMenuPopulateRequested;
 
         public PrefabCardElement(string itemId)
@@ -37,10 +39,17 @@ namespace PrefabBoard.Editor.UI
             _missingIndicator = new VisualElement();
             _missingIndicator.AddToClassList("pb-card-missing");
 
+            _renderModeButton = new Button(OnRenderModeButtonClicked);
+            _renderModeButton.AddToClassList("pb-card-render-mode");
+            _renderModeButton.focusable = false;
+            _renderModeButton.RegisterCallback<PointerDownEvent>(evt => evt.StopPropagation());
+            _renderModeButton.RegisterCallback<PointerUpEvent>(evt => evt.StopPropagation());
+
             Add(_previewImage);
             Add(_titleLabel);
             Add(_noteLabel);
             Add(_missingIndicator);
+            Add(_renderModeButton);
 
             RegisterCallback<PointerDownEvent>(OnPointerDown);
             RegisterCallback<ContextualMenuPopulateEvent>(OnPopulateContextMenu);
@@ -56,6 +65,8 @@ namespace PrefabBoard.Editor.UI
             EnableInClassList("pb-card--selected", selected);
             EnableInClassList("pb-card--muted", !highlighted);
             EnableInClassList("pb-card--missing", missing);
+            _renderModeButton.text = GetRenderModeShort(item.previewRenderMode);
+            _renderModeButton.tooltip = GetRenderModeTooltip(item.previewRenderMode);
 
             tooltip = missing ? "Prefab not found" : title;
         }
@@ -88,6 +99,37 @@ namespace PrefabBoard.Editor.UI
         private void OnPopulateContextMenu(ContextualMenuPopulateEvent evt)
         {
             ContextMenuPopulateRequested?.Invoke(this, evt);
+        }
+
+        private void OnRenderModeButtonClicked()
+        {
+            RenderModeToggleRequested?.Invoke(this);
+        }
+
+        private static string GetRenderModeShort(BoardItemPreviewRenderMode mode)
+        {
+            switch (mode)
+            {
+                case BoardItemPreviewRenderMode.Resolution:
+                    return "R";
+                case BoardItemPreviewRenderMode.ControlSize:
+                    return "C";
+                default:
+                    return "A";
+            }
+        }
+
+        private static string GetRenderModeTooltip(BoardItemPreviewRenderMode mode)
+        {
+            switch (mode)
+            {
+                case BoardItemPreviewRenderMode.Resolution:
+                    return "Preview mode: Resolution";
+                case BoardItemPreviewRenderMode.ControlSize:
+                    return "Preview mode: Control Size";
+                default:
+                    return "Preview mode: Auto";
+            }
         }
     }
 }

@@ -1,41 +1,44 @@
 ﻿# Active Context
 
 ## Текущие задачи
-1. Реализовать корректный preview для uGUI prefab (не дефолтная заглушка).
-2. Сохранить совместимость MVP и не менять контракты Canvas/Data.
-3. Обновить документацию и зафиксировать изменения в git.
+1. Добавить per-item переключатель режима рендера preview на карточке.
+2. Сохранять выбранный режим в `BoardItemData`.
+3. Поддержать режимы размера холста для рендера: `Resolution`, `Control Size`, `Auto`.
 
 ## Последние изменения
-- Добавлен fallback рендер для UI prefab в `PreviewCache`:
-  - prefab инстанцируется во временной preview scene;
-  - Canvas переводится в `WorldSpace` для рендера камерой;
-  - bounds считаются по `Renderer` + `RectTransform`;
-  - изображение рендерится в `RenderTexture` и кэшируется.
-- Исправлено поведение кэша preview:
-  - mini thumbnail больше не кэшируется, пока `AssetPreview` ещё грузится;
-  - это позволяет карточке обновиться до полноценного preview после загрузки.
+- В `BoardItemData` добавлен enum `BoardItemPreviewRenderMode` и поле `previewRenderMode` (сериализуется в ассете).
+- В `PrefabCardElement` добавлена кнопка режима preview (`A/R/C`) и callback для Canvas.
+- В `BoardCanvasElement`:
+  - добавлена обработка переключения режима с `Undo`;
+  - сохранение и dirty-mark в данных;
+  - прокидывание режима и размеров в `PreviewCache`;
+  - копирование режима при дублировании карточек.
+- В `PreviewCache`:
+  - ключ кэша теперь учитывает `prefabGuid + mode + canvasSize`;
+  - реализованы стратегии размеров холста `Resolution`, `Control Size`, `Auto`;
+  - `Auto` выбирает `Resolution` для stretch-to-screen rect, иначе `Control Size`;
+  - инвалидация удаляет все кэш-варианты по `prefabGuid`.
 
 ## Следующие шаги
-1. Проверить в Unity Editor несколько uGUI prefab (включая nested Canvas).
-2. Оценить, нужен ли фон/подсветка для светлых UI элементов.
-3. После smoke-test при необходимости добавить тонкую настройку framing/padding.
+1. Ручной smoke-test в Unity Editor на UI prefab с фиксированным размером и full-stretch.
+2. Оценить UX подписи режимов (`A/R/C`) и при необходимости заменить на иконки.
+3. При необходимости добавить выбор режима через контекстное меню карточки.
 
 ## План (REQUIREMENTS_OWNER)
-1. Обеспечить, чтобы uGUI prefab отображался содержимым, а не дефолтной иконкой.
-2. Не ломать существующий pipeline preview для не-UI префабов.
-3. Сохранить undo/data контракты без изменений.
+1. Реализовать выбор режима рендера прямо на карточке.
+2. Обеспечить персистентность режима в данных доски.
+3. Не ломать существующие сценарии drag/selection и pipeline preview.
 
 ## Стратегия (ARCHITECT)
-- Изменение локализовано в `Services/PreviewCache.cs`.
-- Data-модель и UI события не изменяются.
-- Для устойчивости добавлен явный lifecycle cleanup временных ресурсов.
+- Изменения локализованы в `Data/BoardItemData`, `UI/PrefabCardElement`, `UI/BoardCanvasElement`, `Services/PreviewCache`.
+- Слои данных и UI остаются разделёнными; PreviewCache остаётся сервисом, который получает параметры рендера извне.
 
 ## REVIEWER checklist
-- Временная scene закрывается в `finally`.
-- `RenderTexture` освобождается, custom `Texture2D` уничтожаются на `Invalidate/Clear`.
-- UI fallback применяется до `AssetPreview` для uGUI prefab.
-- Mini thumbnail не кэшируется в режиме `loading=true`.
+- Переключение режима делает один undo-step.
+- Значение режима дублируется вместе с карточкой.
+- Кнопка режима не конфликтует с drag/select по карточке.
+- Кэш не возвращает preview не того режима/размера.
 
 ## QA_TESTER заметки
-- Автоматический Unity compile/smoke в этой среде не запускался.
-- Нужна ручная проверка в Editor: загрузка доски, добавление uGUI prefab, визуал карточки.
+- Автоматический Unity compile/smoke не запускался в этой среде.
+- Требуется ручная проверка в Unity Editor на нескольких типах UI prefab.

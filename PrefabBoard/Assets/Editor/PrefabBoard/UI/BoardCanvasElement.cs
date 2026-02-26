@@ -207,6 +207,7 @@ namespace PrefabBoard.Editor.UI
                 ve.PrimaryPointerDown += OnCardPointerDown;
                 ve.DoubleClicked += OnCardDoubleClicked;
                 ve.ExternalDragRequested += OnCardExternalDrag;
+                ve.RenderModeToggleRequested += OnCardRenderModeToggle;
                 ve.ContextMenuPopulateRequested += OnCardContextMenu;
                 _cards[item.id] = ve;
                 _itemsLayer.Add(ve);
@@ -496,6 +497,20 @@ namespace PrefabBoard.Editor.UI
             DragAndDrop.StartDrag(asset.name);
         }
 
+        private void OnCardRenderModeToggle(PrefabCardElement card)
+        {
+            if (_board == null) return;
+
+            var item = FindItem(card.ItemId);
+            if (item == null) return;
+
+            BoardUndo.Record(_board, "Toggle Preview Render Mode");
+            item.previewRenderMode = NextRenderMode(item.previewRenderMode);
+            BoardUndo.MarkDirty(_board);
+            PreviewCache.Invalidate(item.prefabGuid);
+            RefreshVisualState();
+        }
+
         private void OnCardContextMenu(PrefabCardElement card, ContextualMenuPopulateEvent evt)
         {
             evt.menu.AppendAction("Ping Asset", _ => PingCard(card.ItemId), DropdownMenuAction.AlwaysEnabled);
@@ -565,6 +580,7 @@ namespace PrefabBoard.Editor.UI
             }
 
             var query = _search.Trim();
+            var previewResolution = GetPreviewResolution();
             foreach (var item in _board.items)
             {
                 if (item == null || !_cards.TryGetValue(item.id, out var card)) continue;
@@ -579,7 +595,7 @@ namespace PrefabBoard.Editor.UI
                 var title = ResolveTitle(item);
                 var note = string.IsNullOrWhiteSpace(item.note) ? string.Empty : TrimNote(item.note);
                 var missing = !AssetGuidUtils.TryLoadAssetByGuid<UnityEngine.Object>(item.prefabGuid, out var asset) || asset == null;
-                var preview = PreviewCache.GetPreview(item.prefabGuid, out var loading);
+                var preview = PreviewCache.GetPreview(item.prefabGuid, item.previewRenderMode, item.size, previewResolution, out var loading);
                 if (loading) _pendingPreview = true;
 
                 var highlighted = IsMatch(item, title, query);
@@ -658,7 +674,8 @@ namespace PrefabBoard.Editor.UI
                     note = src.note,
                     tagColor = src.tagColor,
                     tags = src.tags != null ? src.tags.ToArray() : null,
-                    groupId = src.groupId
+                    groupId = src.groupId,
+                    previewRenderMode = src.previewRenderMode
                 };
                 _board.items.Add(dupe);
                 newIds.Add(dupe.id);
@@ -794,6 +811,29 @@ namespace PrefabBoard.Editor.UI
             if (_board?.viewSettings == null || !_board.viewSettings.snapEnabled) return value;
             var step = Mathf.Max(1f, _board.viewSettings.gridStep);
             return new Vector2(Mathf.Round(value.x / step) * step, Mathf.Round(value.y / step) * step);
+        }
+
+        private Vector2 GetPreviewResolution()
+        {
+            const float quantizeStep = 32f;
+            var width = Mathf.Max(320f, contentRect.width);
+            var height = Mathf.Max(180f, contentRect.height);
+            width = Mathf.Round(width / quantizeStep) * quantizeStep;
+            height = Mathf.Round(height / quantizeStep) * quantizeStep;
+            return new Vector2(width, height);
+        }
+
+        private static BoardItemPreviewRenderMode NextRenderMode(BoardItemPreviewRenderMode mode)
+        {
+            switch (mode)
+            {
+                case BoardItemPreviewRenderMode.Resolution:
+                    return BoardItemPreviewRenderMode.ControlSize;
+                case BoardItemPreviewRenderMode.ControlSize:
+                    return BoardItemPreviewRenderMode.Auto;
+                default:
+                    return BoardItemPreviewRenderMode.Resolution;
+            }
         }
 
         private bool HasDraggedPrefabs() => DragAndDrop.objectReferences != null && DragAndDrop.objectReferences.Any(AssetGuidUtils.IsPrefabAsset);

@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using PrefabBoard.Editor.Data;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
@@ -9,13 +10,22 @@ namespace PrefabBoard.Editor.Services
 {
     public static class PreviewCache
     {
-        private const int CustomPreviewSize = 256;
+        private const int DefaultResolutionWidth = 1920;
+        private const int DefaultResolutionHeight = 1080;
+        private const int MinCanvasSize = 64;
+        private const int MaxCanvasSize = 4096;
+        private const int MaxPreviewTextureSize = 512;
 
         private static readonly Dictionary<string, Texture2D> Cache = new Dictionary<string, Texture2D>();
         private static readonly HashSet<string> CustomPreviewKeys = new HashSet<string>();
         private static readonly HashSet<string> FailedCustomPreviewKeys = new HashSet<string>();
 
-        public static Texture2D GetPreview(string prefabGuid, out bool loading)
+        public static Texture2D GetPreview(
+            string prefabGuid,
+            BoardItemPreviewRenderMode renderMode,
+            Vector2 controlSizeHint,
+            Vector2 editorResolution,
+            out bool loading)
         {
             loading = false;
 
@@ -24,29 +34,34 @@ namespace PrefabBoard.Editor.Services
                 return GetMissingIcon();
             }
 
-            if (Cache.TryGetValue(prefabGuid, out var cached) && cached != null)
-            {
-                return cached;
-            }
-
             if (!AssetGuidUtils.TryLoadAssetByGuid<GameObject>(prefabGuid, out var prefabAsset) || prefabAsset == null)
             {
                 return GetMissingIcon();
             }
 
             var hasUiContent = HasUiContent(prefabAsset);
-            if (hasUiContent && !FailedCustomPreviewKeys.Contains(prefabGuid))
+            var canvasSize = hasUiContent
+                ? ResolveCanvasSize(prefabAsset, renderMode, controlSizeHint, editorResolution)
+                : Vector2Int.zero;
+
+            var cacheKey = BuildCacheKey(prefabGuid, hasUiContent, renderMode, canvasSize);
+            if (Cache.TryGetValue(cacheKey, out var cached) && cached != null)
             {
-                var customPreview = TryRenderUiPrefabPreview(prefabAsset);
+                return cached;
+            }
+
+            if (hasUiContent && !FailedCustomPreviewKeys.Contains(cacheKey))
+            {
+                var customPreview = TryRenderUiPrefabPreview(prefabAsset, canvasSize);
                 if (customPreview != null)
                 {
-                    Cache[prefabGuid] = customPreview;
-                    CustomPreviewKeys.Add(prefabGuid);
-                    FailedCustomPreviewKeys.Remove(prefabGuid);
+                    Cache[cacheKey] = customPreview;
+                    CustomPreviewKeys.Add(cacheKey);
+                    FailedCustomPreviewKeys.Remove(cacheKey);
                     return customPreview;
                 }
 
-                FailedCustomPreviewKeys.Add(prefabGuid);
+                FailedCustomPreviewKeys.Add(cacheKey);
             }
 
             var instanceId = prefabAsset.GetInstanceID();
@@ -55,20 +70,19 @@ namespace PrefabBoard.Editor.Services
 
             if (preview != null)
             {
-                Cache[prefabGuid] = preview;
+                Cache[cacheKey] = preview;
                 return preview;
             }
 
             var miniThumbnail = AssetPreview.GetMiniThumbnail(prefabAsset) as Texture2D;
             if (loading)
             {
-                // Do not cache while AssetPreview is still generating.
                 return miniThumbnail != null ? miniThumbnail : GetPrefabIcon();
             }
 
             if (miniThumbnail != null)
             {
-                Cache[prefabGuid] = miniThumbnail;
+                Cache[cacheKey] = miniThumbnail;
                 return miniThumbnail;
             }
 
@@ -82,9 +96,22 @@ namespace PrefabBoard.Editor.Services
                 return;
             }
 
-            DestroyCustomPreview(prefabGuid);
-            Cache.Remove(prefabGuid);
-            FailedCustomPreviewKeys.Remove(prefabGuid);
+            var prefix = prefabGuid + "|";
+            var keysToRemove = new List<string>();
+            foreach (var key in Cache.Keys)
+            {
+                if (key.StartsWith(prefix))
+                {
+                    keysToRemove.Add(key);
+                }
+            }
+
+            for (var i = 0; i < keysToRemove.Count; i++)
+            {
+                DestroyCustomPreview(keysToRemove[i]);
+                Cache.Remove(keysToRemove[i]);
+                FailedCustomPreviewKeys.Remove(keysToRemove[i]);
+            }
         }
 
         public static void Clear()
@@ -112,19 +139,29 @@ namespace PrefabBoard.Editor.Services
             return EditorGUIUtility.IconContent("console.erroricon").image as Texture2D;
         }
 
-        private static void DestroyCustomPreview(string prefabGuid)
+        private static void DestroyCustomPreview(string cacheKey)
         {
-            if (!CustomPreviewKeys.Contains(prefabGuid))
+            if (!CustomPreviewKeys.Contains(cacheKey))
             {
                 return;
             }
 
-            if (Cache.TryGetValue(prefabGuid, out var texture) && texture != null)
+            if (Cache.TryGetValue(cacheKey, out var texture) && texture != null)
             {
                 Object.DestroyImmediate(texture);
             }
 
-            CustomPreviewKeys.Remove(prefabGuid);
+            CustomPreviewKeys.Remove(cacheKey);
+        }
+
+        private static string BuildCacheKey(string prefabGuid, bool hasUiContent, BoardItemPreviewRenderMode renderMode, Vector2Int canvasSize)
+        {
+            if (!hasUiContent)
+            {
+                return prefabGuid + "|std";
+            }
+
+            return prefabGuid + "|ui|" + (int)renderMode + "|" + canvasSize.x + "x" + canvasSize.y;
         }
 
         private static bool HasUiContent(GameObject prefabAsset)
@@ -138,7 +175,131 @@ namespace PrefabBoard.Editor.Services
                    prefabAsset.GetComponentInChildren<RectTransform>(true) != null;
         }
 
-        private static Texture2D TryRenderUiPrefabPreview(GameObject prefabAsset)
+        private static Vector2Int ResolveCanvasSize(
+            GameObject prefabAsset,
+            BoardItemPreviewRenderMode renderMode,
+            Vector2 controlSizeHint,
+            Vector2 editorResolution)
+        {
+            var resolutionSize = SanitizeCanvasSize(editorResolution, new Vector2Int(DefaultResolutionWidth, DefaultResolutionHeight));
+            var controlSize = ResolveControlSize(prefabAsset, controlSizeHint, resolutionSize);
+
+            if (renderMode == BoardItemPreviewRenderMode.Resolution)
+            {
+                return resolutionSize;
+            }
+
+            if (renderMode == BoardItemPreviewRenderMode.ControlSize)
+            {
+                return controlSize;
+            }
+
+            return IsStretchToScreenPrefab(prefabAsset) ? resolutionSize : controlSize;
+        }
+
+        private static Vector2Int ResolveControlSize(GameObject prefabAsset, Vector2 controlSizeHint, Vector2Int resolutionSize)
+        {
+            var hinted = SanitizeCanvasSize(controlSizeHint, new Vector2Int(0, 0));
+            if (hinted.x > 0 && hinted.y > 0)
+            {
+                return ClampToViewportRange(hinted, resolutionSize);
+            }
+
+            if (TryGetPrimaryRectTransform(prefabAsset, out var rectTransform))
+            {
+                var rectSize = rectTransform.rect.size;
+                if (rectSize.x > 1f && rectSize.y > 1f)
+                {
+                    var fromRect = SanitizeCanvasSize(rectSize, new Vector2Int(0, 0));
+                    if (fromRect.x > 0 && fromRect.y > 0)
+                    {
+                        return ClampToViewportRange(fromRect, resolutionSize);
+                    }
+                }
+            }
+
+            var fallback = new Vector2Int(Mathf.RoundToInt(resolutionSize.x * 0.5f), Mathf.RoundToInt(resolutionSize.y * 0.5f));
+            return ClampToViewportRange(fallback, resolutionSize);
+        }
+
+        private static bool IsStretchToScreenPrefab(GameObject prefabAsset)
+        {
+            if (!TryGetPrimaryRectTransform(prefabAsset, out var rectTransform))
+            {
+                return false;
+            }
+
+            return IsStretchRect(rectTransform);
+        }
+
+        private static bool TryGetPrimaryRectTransform(GameObject root, out RectTransform rectTransform)
+        {
+            rectTransform = null;
+            if (root == null)
+            {
+                return false;
+            }
+
+            rectTransform = root.GetComponent<RectTransform>();
+            if (rectTransform != null)
+            {
+                return true;
+            }
+
+            rectTransform = root.GetComponentInChildren<RectTransform>(true);
+            return rectTransform != null;
+        }
+
+        private static bool IsStretchRect(RectTransform rectTransform)
+        {
+            if (rectTransform == null)
+            {
+                return false;
+            }
+
+            const float epsilon = 0.001f;
+            var fullAnchors = Mathf.Abs(rectTransform.anchorMin.x) <= epsilon &&
+                              Mathf.Abs(rectTransform.anchorMin.y) <= epsilon &&
+                              Mathf.Abs(rectTransform.anchorMax.x - 1f) <= epsilon &&
+                              Mathf.Abs(rectTransform.anchorMax.y - 1f) <= epsilon;
+
+            if (!fullAnchors)
+            {
+                return false;
+            }
+
+            return Mathf.Abs(rectTransform.offsetMin.x) <= epsilon &&
+                   Mathf.Abs(rectTransform.offsetMin.y) <= epsilon &&
+                   Mathf.Abs(rectTransform.offsetMax.x) <= epsilon &&
+                   Mathf.Abs(rectTransform.offsetMax.y) <= epsilon;
+        }
+
+        private static Vector2Int ClampToViewportRange(Vector2Int size, Vector2Int resolutionSize)
+        {
+            var maxWidth = Mathf.Clamp(Mathf.RoundToInt(resolutionSize.x * 1.5f), MinCanvasSize, MaxCanvasSize);
+            var maxHeight = Mathf.Clamp(Mathf.RoundToInt(resolutionSize.y * 1.5f), MinCanvasSize, MaxCanvasSize);
+
+            return new Vector2Int(
+                Mathf.Clamp(size.x, MinCanvasSize, maxWidth),
+                Mathf.Clamp(size.y, MinCanvasSize, maxHeight));
+        }
+
+        private static Vector2Int SanitizeCanvasSize(Vector2 rawSize, Vector2Int fallback)
+        {
+            var width = Mathf.RoundToInt(rawSize.x);
+            var height = Mathf.RoundToInt(rawSize.y);
+
+            if (width < MinCanvasSize || height < MinCanvasSize)
+            {
+                return fallback;
+            }
+
+            return new Vector2Int(
+                Mathf.Clamp(width, MinCanvasSize, MaxCanvasSize),
+                Mathf.Clamp(height, MinCanvasSize, MaxCanvasSize));
+        }
+
+        private static Texture2D TryRenderUiPrefabPreview(GameObject prefabAsset, Vector2Int canvasSize)
         {
             Scene previewScene = default;
             var sceneCreated = false;
@@ -165,13 +326,16 @@ namespace PrefabBoard.Editor.Services
                 instance.transform.rotation = Quaternion.identity;
                 instance.transform.localScale = Vector3.one;
 
-                PrepareUiForPreview(instance);
+                PrepareUiForPreview(instance, canvasSize);
                 Canvas.ForceUpdateCanvases();
 
                 if (!TryCalculateWorldBounds(instance, out var bounds))
                 {
                     return null;
                 }
+
+                var textureSize = ComputeTextureSize(canvasSize);
+                var aspect = Mathf.Max(0.01f, textureSize.x / (float)textureSize.y);
 
                 cameraObject = new GameObject("PrefabBoardPreviewCamera");
                 cameraObject.hideFlags = HideFlags.HideAndDontSave;
@@ -184,18 +348,18 @@ namespace PrefabBoard.Editor.Services
                 camera.nearClipPlane = 0.01f;
                 camera.farClipPlane = 1000f;
 
-                PositionPreviewCamera(camera, bounds);
+                PositionPreviewCamera(camera, bounds, aspect);
 
-                renderTexture = RenderTexture.GetTemporary(CustomPreviewSize, CustomPreviewSize, 24, RenderTextureFormat.ARGB32);
+                renderTexture = RenderTexture.GetTemporary(textureSize.x, textureSize.y, 24, RenderTextureFormat.ARGB32);
                 camera.targetTexture = renderTexture;
                 camera.Render();
 
                 RenderTexture.active = renderTexture;
-                texture = new Texture2D(CustomPreviewSize, CustomPreviewSize, TextureFormat.RGBA32, false)
+                texture = new Texture2D(textureSize.x, textureSize.y, TextureFormat.RGBA32, false)
                 {
                     hideFlags = HideFlags.HideAndDontSave
                 };
-                texture.ReadPixels(new Rect(0f, 0f, CustomPreviewSize, CustomPreviewSize), 0, 0);
+                texture.ReadPixels(new Rect(0f, 0f, textureSize.x, textureSize.y), 0, 0);
                 texture.Apply(false, false);
 
                 return texture;
@@ -235,7 +399,7 @@ namespace PrefabBoard.Editor.Services
             }
         }
 
-        private static void PrepareUiForPreview(GameObject root)
+        private static void PrepareUiForPreview(GameObject root, Vector2Int canvasSize)
         {
             if (root == null)
             {
@@ -254,7 +418,34 @@ namespace PrefabBoard.Editor.Services
             {
                 canvas.renderMode = RenderMode.WorldSpace;
                 canvas.worldCamera = null;
+
+                var canvasRect = canvas.GetComponent<RectTransform>();
+                if (canvasRect != null)
+                {
+                    canvasRect.anchorMin = new Vector2(0.5f, 0.5f);
+                    canvasRect.anchorMax = new Vector2(0.5f, 0.5f);
+                    canvasRect.pivot = new Vector2(0.5f, 0.5f);
+                    canvasRect.sizeDelta = new Vector2(canvasSize.x, canvasSize.y);
+                    canvasRect.anchoredPosition3D = Vector3.zero;
+                }
             }
+        }
+
+        private static Vector2Int ComputeTextureSize(Vector2Int canvasSize)
+        {
+            var width = Mathf.Max(MinCanvasSize, canvasSize.x);
+            var height = Mathf.Max(MinCanvasSize, canvasSize.y);
+
+            var maxDimension = Mathf.Max(width, height);
+            if (maxDimension <= MaxPreviewTextureSize)
+            {
+                return new Vector2Int(width, height);
+            }
+
+            var scale = MaxPreviewTextureSize / (float)maxDimension;
+            var scaledWidth = Mathf.Clamp(Mathf.RoundToInt(width * scale), MinCanvasSize, MaxPreviewTextureSize);
+            var scaledHeight = Mathf.Clamp(Mathf.RoundToInt(height * scale), MinCanvasSize, MaxPreviewTextureSize);
+            return new Vector2Int(scaledWidth, scaledHeight);
         }
 
         private static bool TryCalculateWorldBounds(GameObject root, out Bounds bounds)
@@ -308,12 +499,14 @@ namespace PrefabBoard.Editor.Services
             return true;
         }
 
-        private static void PositionPreviewCamera(Camera camera, Bounds bounds)
+        private static void PositionPreviewCamera(Camera camera, Bounds bounds, float aspect)
         {
             var center = bounds.center;
             var extents = bounds.extents;
 
-            var size = Mathf.Max(extents.x, extents.y) * 1.25f;
+            var verticalHalf = extents.y;
+            var horizontalHalf = extents.x / Mathf.Max(0.01f, aspect);
+            var size = Mathf.Max(verticalHalf, horizontalHalf) * 1.15f;
             if (size < 0.1f)
             {
                 size = 0.5f;
