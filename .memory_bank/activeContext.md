@@ -1,77 +1,52 @@
 ﻿# Active Context
 
 ## Текущие задачи
-1. Визуализировать raw рендер-пайплайны preview для диагностики серого кадра.
-2. Дать пользователю инструмент сохранения debug-кадров без debugger attach.
-3. Зафиксировать update в git.
+1. Добавить reproducible debug-сцену `Assets/Scenes/Test.unity`, собранную из того же preview rig, что используется в `PreviewCache`.
+2. Дать быстрый entry point из меню Unity для сборки test-сцены:
+   - из последнего preview capture
+   - из выделенного prefab
+3. Зафиксировать изменения и обновить документацию/Memory Bank.
 
 ## Последние изменения (текущая сессия)
-- **Fix 1**: в `TryRenderUiPrefabPreviewScreenSpace` — `renderTexture` и `targetTexture` теперь назначаются ДО `Canvas.ForceUpdateCanvases()`. Ранее canvas считал layout при camera.pixelWidth/Height=0, что давало неверное позиционирование UI.
-- **Fix 2**: `ShouldApplyCanvasSizeHint` — stretch rect внутри parent canvas больше НЕ получает `sizeDelta = canvasSize`. Раньше это расширяло nested canvas за пределы родителя (rect = parentSize + canvasSize вместо fill).
-- **Fix 3**: `PrepareUiForPreviewScreenSpace` — Canvas больше не добавляется к instance если тот уже вложен в parent Canvas (PrefabBoardPreviewCanvas). Image компоненты рендерятся через root preview canvas напрямую.
+- В `PreviewCache` добавлен API для сборки test-сцены:
+  - `TryCreateTestSceneFromLastCapture(...)`
+  - `TryCreateTestScene(...)`
+- В `PreviewCache` добавлен путь по умолчанию `Assets/Scenes/Test.unity` и сборка сцены с тем же pipeline-набором:
+  - `PrefabBoardPreviewCamera`
+  - `PrefabBoardPreviewCanvas` (`ScreenSpaceCamera` + `CanvasScaler`)
+  - `Content`
+  - instance prefab, подготовленный через те же `AttachInstanceToPreviewContent`/`PrepareUiForPreviewScreenSpace`.
+- `CreatePreviewCamera/CreatePreviewCanvas/CreatePreviewContent` расширены overload-методами с флагом `hidden`, чтобы использовать один и тот же конфиг как в preview scene, так и в обычной test scene.
+- Добавлен `PreviewTestSceneMenu`:
+  - `Tools/PrefabBoard/Create Test Scene/From Last Preview Capture`
+  - `Tools/PrefabBoard/Create Test Scene/From Selected Prefab`
+- `local/README.md` обновлён: добавлен workflow сборки `Test.unity` для ручной диагностики.
 
 ## Предыдущие изменения
-- В `BoardItemData` добавлен enum `BoardItemPreviewRenderMode` и поле `previewRenderMode` (сериализуется в ассете).
-- В `PrefabCardElement` добавлена кнопка режима preview (`A/R/C`) и callback для Canvas.
-- Action-кнопки карточки вынесены в отдельный контейнер `pb-card-actions` (правый нижний угол, с расчётом на дальнейшее расширение).
-- В `BoardCanvasElement`:
-  - добавлена обработка переключения режима с `Undo`;
-  - сохранение и dirty-mark в данных;
-  - прокидывание режима и размеров в `PreviewCache`;
-  - копирование режима при дублировании карточек.
-- В `PreviewCache`:
-  - ключ кэша теперь учитывает `prefabGuid + mode + canvasSize`;
-  - реализованы стратегии размеров холста `Resolution`, `Control Size`, `Auto`;
-  - `Auto` выбирает `Resolution` для stretch-to-screen rect, иначе `Control Size`;
-  - инвалидация удаляет все кэш-варианты по `prefabGuid`.
-  - UI preview переведён на `ScreenSpaceCamera` rig:
-    - отдельная preview camera
-    - отдельный canvas
-    - `Content` контейнер с инстансом prefab
-  - все canvases инстанса принудительно переводятся в `ScreenSpaceCamera`, с нормализацией `CanvasScaler`;
-  - удалён world-space bounds framing для UI preview.
-  - добавлен двойной pipeline рендера:
-    1. `ScreenSpace` rig
-    2. fallback `WorldSpace` camera framing
-  - добавлен runtime-диагностический `Debug.LogWarning` при пустом кадре или exception в preview pipeline.
-  - убрана эвристика отбрасывания «пустых» кадров, чтобы не падать в icon fallback при спорных кейсах.
-  - в `Control Size` размер preview canvas теперь равен размеру элемента без viewport-clamp.
-  - источник `Resolution` переключён с размера окна инструмента на выбранное разрешение `GameView`.
-  - добавлен клиппинг `pb-canvas` и `pb-card`, чтобы карточки/контент не вылезали на toolbar и за границы элемента.
-- Добавлен debug capture pipeline:
-  - `PreviewDebugCapture` хранит последние кадры стадий `ScreenSpace`, `WorldSpace`, `Final`.
-  - `PreviewCache` пишет кадры и notes по каждой стадии, включая fallback-ветки и ошибки.
-  - `PreviewDebugWindow` (`Tools/PrefabBoard/Preview Debug`) показывает raw текстуры и метаданные.
-- Добавлен safeguard для `UI.Image` без source sprite:
-  - в preview-инстансе автоматически подставляется built-in `UISprite`,
-  - это предотвращает визуально пустой кадр (серый фон) для таких элементов.
-- Усилен fallback:
-  - если `ScreenSpace` кадр получается плоским (однотонный фон), автоматически пробуем `WorldSpace` и выбираем неплоский результат.
-  - если built-in `UISprite` недоступен, создаётся runtime белый fallback-sprite для `Image`.
-- Исправлена критическая настройка preview canvas:
-  - в screen-space пайплайне wrapper-canvas теперь `ScreenSpaceCamera` (ранее ошибочно был `WorldSpace`).
-  - добавлен явный UI layer routing: instance/canvas/content/camera на `UI` слой и `camera.cullingMask = UI`.
+- Переключение режима preview (`Auto/Resolution/ControlSize`) вынесено на карточку и сохраняется в `BoardItemData`.
+- Добавлен preview debug pipeline (`PreviewDebugCapture` + `PreviewDebugWindow`).
+- Preview UI переведён на `ScreenSpaceCamera` rig + layer routing на `UI` слой.
+- Добавлены fallback'и для `Image` без sprite и world-space fallback pipeline.
 
 ## Следующие шаги
-1. Открыть Unity и проверить preview `Assets/Dialog.prefab` на карточке.
-2. Если нужно — снять debug-кадры из `Tools/PrefabBoard/Preview Debug`.
-3. Проверить другие UI prefab (с собственным Canvas) — убедиться что fix3 не сломал их.
+1. В Unity выполнить `Tools/PrefabBoard/Create Test Scene/From Last Preview Capture` и открыть `Assets/Scenes/Test.unity`.
+2. Проверить, виден ли UI prefab в `GameView` и корректны ли `Camera/Canvas/CanvasScaler/layer` настройки.
+3. Если UI всё ещё пустой, сравнить кадры из `Tools/PrefabBoard/Preview Debug` со сценой `Test.unity`.
 
 ## План (REQUIREMENTS_OWNER)
-1. Реализовать выбор режима рендера прямо на карточке.
-2. Обеспечить персистентность режима в данных доски.
-3. Не ломать существующие сценарии drag/selection и pipeline preview.
+1. Снять параметры из текущего preview pipeline.
+2. Построить test scene теми же настройками.
+3. Задокументировать workflow и закоммитить.
 
 ## Стратегия (ARCHITECT)
-- Изменения локализованы в `Data/BoardItemData`, `UI/PrefabCardElement`, `UI/BoardCanvasElement`, `Services/PreviewCache`.
-- Слои данных и UI остаются разделёнными; PreviewCache остаётся сервисом, который получает параметры рендера извне.
+- Не дублировать второй риг: повторно использовать существующие методы настройки preview в `PreviewCache`.
+- Вынести запуск в отдельный menu entry без вмешательства в логику `BoardCanvasElement`.
 
 ## REVIEWER checklist
-- Переключение режима делает один undo-step.
-- Значение режима дублируется вместе с карточкой.
-- Кнопка режима не конфликтует с drag/select по карточке.
-- Кэш не возвращает preview не того режима/размера.
+- Меню создаёт сцену без ручной настройки объектов.
+- Конфигурация camera/canvas совпадает с preview pipeline.
+- Документация и Memory Bank синхронизированы.
 
 ## QA_TESTER заметки
-- Автоматический Unity compile/smoke не запускался в этой среде.
-- Требуется ручная проверка в Unity Editor на нескольких типах UI prefab.
+- Автоматический Unity compile/smoke в этой среде не запускался.
+- Нужна ручная проверка в Unity Editor (создание `Test.unity` + визуальная валидация).

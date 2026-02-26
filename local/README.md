@@ -109,6 +109,10 @@ UI preview рендерится через временный rig в preview sce
 - показывает raw кадры `ScreenSpace`, `WorldSpace`, `Final`
 - показывает метаданные (prefab path, mode, canvas size, время)
 - умеет сохранять PNG в `Temp/PrefabBoardPreviewDebug`
+- можно собрать реальную сцену `Assets/Scenes/Test.unity` с тем же preview rig через:
+  - `Tools/PrefabBoard/Create Test Scene/From Last Preview Capture`
+  - `Tools/PrefabBoard/Create Test Scene/From Selected Prefab`
+  Это создаёт `PrefabBoardPreviewCamera + PrefabBoardPreviewCanvas + Content + instance prefab` с теми же настройками, что в preview pipeline.
 
 Canvas и карточки клиппируются по своим границам, чтобы контент не выходил поверх toolbar и за пределы элемента.
 

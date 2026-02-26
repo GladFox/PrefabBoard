@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.IO;
 using PrefabBoard.Editor.Data;
 using UnityEditor;
 using UnityEditor.SceneManagement;
@@ -22,6 +23,7 @@ namespace PrefabBoard.Editor.Services
         private static readonly HashSet<string> FailedCustomPreviewKeys = new HashSet<string>();
         private static Sprite _fallbackUiSprite;
         private static Texture2D _fallbackUiTexture;
+        private const string DefaultDebugScenePath = "Assets/Scenes/Test.unity";
 
         public static Texture2D GetPreview(
             string prefabGuid,
@@ -138,6 +140,40 @@ namespace PrefabBoard.Editor.Services
             FailedCustomPreviewKeys.Clear();
         }
 
+        public static bool TryCreateTestSceneFromLastCapture(out string scenePath, out string error)
+        {
+            scenePath = DefaultDebugScenePath;
+            error = string.Empty;
+
+            var prefabGuid = PreviewDebugCapture.PrefabGuid;
+            if (string.IsNullOrEmpty(prefabGuid))
+            {
+                error = "No preview capture found. Open a board card first to produce preview capture.";
+                return false;
+            }
+
+            return TryCreateTestScene(prefabGuid, PreviewDebugCapture.CanvasSize, scenePath, out error);
+        }
+
+        public static bool TryCreateTestScene(string prefabGuid, Vector2Int canvasSize, string scenePath, out string error)
+        {
+            error = string.Empty;
+
+            if (string.IsNullOrEmpty(prefabGuid))
+            {
+                error = "Prefab GUID is empty.";
+                return false;
+            }
+
+            if (!AssetGuidUtils.TryLoadAssetByGuid<GameObject>(prefabGuid, out var prefabAsset) || prefabAsset == null)
+            {
+                error = "Failed to resolve prefab by GUID: " + prefabGuid;
+                return false;
+            }
+
+            return TryCreateTestScene(prefabAsset, canvasSize, scenePath, out error);
+        }
+
         private static Texture2D GetPrefabIcon()
         {
             return EditorGUIUtility.IconContent("Prefab Icon").image as Texture2D;
@@ -146,6 +182,126 @@ namespace PrefabBoard.Editor.Services
         private static Texture2D GetMissingIcon()
         {
             return EditorGUIUtility.IconContent("console.erroricon").image as Texture2D;
+        }
+
+        private static bool TryCreateTestScene(GameObject prefabAsset, Vector2Int canvasSize, string scenePath, out string error)
+        {
+            error = string.Empty;
+
+            if (prefabAsset == null)
+            {
+                error = "Prefab asset is null.";
+                return false;
+            }
+
+            if (string.IsNullOrWhiteSpace(scenePath))
+            {
+                scenePath = DefaultDebugScenePath;
+            }
+
+            if (!scenePath.EndsWith(".unity"))
+            {
+                error = "Scene path must point to a .unity file: " + scenePath;
+                return false;
+            }
+
+            if (!EnsureAssetFolderExists(scenePath, out error))
+            {
+                return false;
+            }
+
+            var safeCanvasSize = SanitizeCanvasSize(
+                new Vector2(canvasSize.x, canvasSize.y),
+                new Vector2Int(DefaultResolutionWidth, DefaultResolutionHeight));
+
+            var testScene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+
+            try
+            {
+                var instance = PrefabUtility.InstantiatePrefab(prefabAsset, testScene) as GameObject;
+                if (instance == null)
+                {
+                    error = "Failed to instantiate prefab in scene: " + AssetDatabase.GetAssetPath(prefabAsset);
+                    return false;
+                }
+
+                instance.name = prefabAsset.name;
+                instance.transform.position = Vector3.zero;
+                instance.transform.rotation = Quaternion.identity;
+                instance.transform.localScale = Vector3.one;
+                SetLayerRecursively(instance, UiLayer);
+
+                var previewCamera = CreatePreviewCamera(testScene, safeCanvasSize, false, out _);
+                var previewCanvas = CreatePreviewCanvas(testScene, previewCamera, safeCanvasSize, false, out _);
+                var previewContent = CreatePreviewContent(testScene, previewCanvas, false, out _);
+
+                AttachInstanceToPreviewContent(instance, previewContent, safeCanvasSize);
+                EnsureImagesHaveSprite(instance);
+                PrepareUiForPreviewScreenSpace(instance, previewCamera, safeCanvasSize);
+                Canvas.ForceUpdateCanvases();
+                Canvas.ForceUpdateCanvases();
+
+                EditorSceneManager.MarkSceneDirty(testScene);
+                if (!EditorSceneManager.SaveScene(testScene, scenePath))
+                {
+                    error = "Failed to save scene to path: " + scenePath;
+                    return false;
+                }
+
+                var sceneAsset = AssetDatabase.LoadAssetAtPath<SceneAsset>(scenePath);
+                if (sceneAsset != null)
+                {
+                    Selection.activeObject = sceneAsset;
+                }
+
+                return true;
+            }
+            catch (System.Exception ex)
+            {
+                error = "Exception while creating test scene: " + ex.Message;
+                return false;
+            }
+        }
+
+        private static bool EnsureAssetFolderExists(string assetPath, out string error)
+        {
+            error = string.Empty;
+
+            var folderPath = Path.GetDirectoryName(assetPath)?.Replace("\\", "/");
+            if (string.IsNullOrEmpty(folderPath))
+            {
+                return true;
+            }
+
+            if (AssetDatabase.IsValidFolder(folderPath))
+            {
+                return true;
+            }
+
+            var parts = folderPath.Split('/');
+            if (parts.Length == 0)
+            {
+                return true;
+            }
+
+            var current = parts[0];
+            for (var i = 1; i < parts.Length; i++)
+            {
+                var next = current + "/" + parts[i];
+                if (!AssetDatabase.IsValidFolder(next))
+                {
+                    var guid = AssetDatabase.CreateFolder(current, parts[i]);
+                    if (string.IsNullOrEmpty(guid))
+                    {
+                        error = "Failed to create folder: " + next;
+                        return false;
+                    }
+                }
+
+                current = next;
+            }
+
+            return true;
         }
 
         private static void DestroyCustomPreview(string cacheKey)
@@ -557,8 +713,13 @@ namespace PrefabBoard.Editor.Services
 
         private static Camera CreatePreviewCamera(Scene previewScene, Vector2Int canvasSize, out GameObject cameraObject)
         {
+            return CreatePreviewCamera(previewScene, canvasSize, true, out cameraObject);
+        }
+
+        private static Camera CreatePreviewCamera(Scene previewScene, Vector2Int canvasSize, bool hidden, out GameObject cameraObject)
+        {
             cameraObject = new GameObject("PrefabBoardPreviewCamera");
-            cameraObject.hideFlags = HideFlags.HideAndDontSave;
+            cameraObject.hideFlags = hidden ? HideFlags.HideAndDontSave : HideFlags.None;
             cameraObject.layer = UiLayer;
             SceneManager.MoveGameObjectToScene(cameraObject, previewScene);
 
@@ -578,8 +739,13 @@ namespace PrefabBoard.Editor.Services
 
         private static RectTransform CreatePreviewCanvas(Scene previewScene, Camera previewCamera, Vector2Int canvasSize, out GameObject canvasObject)
         {
+            return CreatePreviewCanvas(previewScene, previewCamera, canvasSize, true, out canvasObject);
+        }
+
+        private static RectTransform CreatePreviewCanvas(Scene previewScene, Camera previewCamera, Vector2Int canvasSize, bool hidden, out GameObject canvasObject)
+        {
             canvasObject = new GameObject("PrefabBoardPreviewCanvas", typeof(RectTransform), typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
-            canvasObject.hideFlags = HideFlags.HideAndDontSave;
+            canvasObject.hideFlags = hidden ? HideFlags.HideAndDontSave : HideFlags.None;
             canvasObject.layer = UiLayer;
             SceneManager.MoveGameObjectToScene(canvasObject, previewScene);
 
@@ -608,8 +774,13 @@ namespace PrefabBoard.Editor.Services
 
         private static RectTransform CreatePreviewContent(Scene previewScene, RectTransform canvasRect, out GameObject contentObject)
         {
+            return CreatePreviewContent(previewScene, canvasRect, true, out contentObject);
+        }
+
+        private static RectTransform CreatePreviewContent(Scene previewScene, RectTransform canvasRect, bool hidden, out GameObject contentObject)
+        {
             contentObject = new GameObject("Content", typeof(RectTransform));
-            contentObject.hideFlags = HideFlags.HideAndDontSave;
+            contentObject.hideFlags = hidden ? HideFlags.HideAndDontSave : HideFlags.None;
             contentObject.layer = UiLayer;
             SceneManager.MoveGameObjectToScene(contentObject, previewScene);
 
