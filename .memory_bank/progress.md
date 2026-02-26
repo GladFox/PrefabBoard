@@ -57,9 +57,9 @@
 - Preview система стала параметризованной (режим + canvas size) и воспроизводимой через test scene builder.
 - Конфиг камеры/canvas для debug-сцены теперь берётся из того же `PreviewCache`, что уменьшает расхождение между runtime preview и ручной диагностикой.
 - Проверка изменений после `last_checked_commit` выполнена:
-  - `git log b998c2a...HEAD`
-  - найдено: `6d7533e`.
+  - `git log 6d7533e...HEAD`
+  - найдено: `0fa631b`.
 
 ## Контроль изменений
-- last_checked_commit: 6d7533e
+- last_checked_commit: 0fa631b
 - last_checked_date: 2026-02-26
