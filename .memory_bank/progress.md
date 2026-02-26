@@ -41,21 +41,25 @@
 - Для `PrefabTemplate` stretch-размер теперь может браться из `CanvasScaler.referenceResolution` шаблонного rig, чтобы совпадать с фактическим canvas шаблона.
 - Добавлен drag-out из карточки: перетаскивание за пределы окна PrefabBoard запускает внешний drag prefab в Scene/Hierarchy.
 - Drag-out усилен fallback-проверкой выхода курсора из окна (`EditorWindow.mouseOverWindow`), чтобы не зависеть от потери `PointerMove` после выхода из Canvas.
+- Drag-out fallback сделан совместимым с обеими системами ввода:
+  - `Input System` (`Mouse.current.leftButton.isPressed`)
+  - `Legacy Input` (`Input.GetMouseButton(0)`)
+  - выбор ветки через compile-guards `ENABLE_INPUT_SYSTEM` / `ENABLE_LEGACY_INPUT_MANAGER`.
 
 ## Известные проблемы
 - В проблемном кейсе пользователя preview всё ещё может показывать пустой/серый результат; причина пока не подтверждена.
 - Нет автоматизированного integration-теста preview в Unity Editor.
 - Поведение auto-size основано на root `RectTransform`; для сложных префабов, где целевой UI-контрол не является root, может потребоваться дополнительное правило выбора таргет-контрола.
-- Внешний drag в Scene/Hierarchy для MVP остаётся на `Ctrl+LMB`.
+- Для drag-out fallback нужна ручная проверка в конфигурациях `Input System`/`Legacy`/`Both` (автотестов нет).
 - Режим `PrefabTemplate` требует корректно размеченный rig prefab (camera/canvas/content), иначе используется built-in fallback.
 
 ## Развитие решений
 - Preview система стала параметризованной (режим + canvas size) и воспроизводимой через test scene builder.
 - Конфиг камеры/canvas для debug-сцены теперь берётся из того же `PreviewCache`, что уменьшает расхождение между runtime preview и ручной диагностикой.
 - Проверка изменений после `last_checked_commit` выполнена:
-  - `git log 14836df...HEAD`
-  - найдено: `b73b2f6`, `b998c2a`.
+  - `git log b998c2a...HEAD`
+  - найдено: `6d7533e`.
 
 ## Контроль изменений
-- last_checked_commit: b998c2a
+- last_checked_commit: 6d7533e
 - last_checked_date: 2026-02-26

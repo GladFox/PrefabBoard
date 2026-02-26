@@ -5,9 +5,16 @@
 2. Сохранить два сценария рендера UI:
    - fullscreen
    - single-control
-3. Обновить документацию и зафиксировать изменения в git.
+3. Обеспечить совместимость drag-out fallback с `Input System` и `Legacy Input`.
+4. Обновить документацию и зафиксировать изменения в git.
 
 ## Последние изменения (текущая сессия)
+- Исправлено падение при `Active Input Handling = Input System Package`:
+  - в `BoardCanvasElement` убран прямой вызов `Input.GetMouseButton(0)` из scheduler fallback;
+  - добавлен общий helper `IsPrimaryMouseButtonPressed()` с compile-guards:
+    - `ENABLE_INPUT_SYSTEM` -> `UnityEngine.InputSystem.Mouse.current.leftButton.isPressed`
+    - `ENABLE_LEGACY_INPUT_MANAGER` -> `UnityEngine.Input.GetMouseButton(0)`
+  - fallback работает в режимах `Input System`, `Legacy`, `Both`.
 - Усилен механизм drag-out в Scene/Hierarchy:
   - добавлен fallback-триггер через `EditorWindow.mouseOverWindow` в scheduler;
   - внешний drag стартует даже если после выхода курсора из Canvas перестали приходить `PointerMove` события.
@@ -93,24 +100,24 @@
 - Добавлены fallback'и для `Image` без sprite и world-space fallback pipeline.
 
 ## Следующие шаги
-1. В Unity выполнить `Tools/PrefabBoard/Create Test Scene/From Last Preview Capture` и открыть `Assets/Scenes/Test.unity`.
-2. Проверить, виден ли UI prefab в `GameView` и корректны ли `Camera/Canvas/CanvasScaler/layer` настройки.
-3. Если UI всё ещё пустой, сравнить кадры из `Tools/PrefabBoard/Preview Debug` со сценой `Test.unity`.
+1. В Unity проверить drag-out карточки в `Scene/Hierarchy` в трёх режимах `Active Input Handling`: `Input System`, `Legacy`, `Both`.
+2. Подтвердить отсутствие `InvalidOperationException` из `UnityEngine.Input`.
+3. При необходимости добавить editor-тест/diagnostic toggle для контроля backend-ветки ввода.
 
 ## План (REQUIREMENTS_OWNER)
-1. Снять параметры из текущего preview pipeline.
-2. Построить test scene теми же настройками.
-3. Задокументировать workflow и закоммитить.
+1. Локализовать место вызова Legacy Input API в drag-out fallback.
+2. Заменить проверку нажатия ЛКМ на backend-agnostic helper с preprocessor guards.
+3. Проверить код на прямые вызовы `UnityEngine.Input` без guard и зафиксировать изменения.
 
 ## Стратегия (ARCHITECT)
-- Не дублировать второй риг: повторно использовать существующие методы настройки preview в `PreviewCache`.
-- Вынести запуск в отдельный menu entry без вмешательства в логику `BoardCanvasElement`.
+- Не вносить runtime-зависимость от `Input System` пакета, использовать только условную компиляцию.
+- Сохранить существующий UX drag-out без изменения контрактов `BoardCanvasElement`.
 
 ## REVIEWER checklist
-- Меню создаёт сцену без ручной настройки объектов.
-- Конфигурация camera/canvas совпадает с preview pipeline.
+- Нет прямых вызовов `Input.GetMouseButton` в коде, исполняемом при `Input System only`.
+- Код компилируется при отсутствии `Input System` package (ветка обёрнута в `#if ENABLE_INPUT_SYSTEM`).
 - Документация и Memory Bank синхронизированы.
 
 ## QA_TESTER заметки
 - Автоматический Unity compile/smoke в этой среде не запускался.
-- Нужна ручная проверка в Unity Editor (создание `Test.unity` + визуальная валидация).
+- Нужна ручная проверка в Unity Editor (`Input System`/`Legacy`/`Both` + drag-out smoke).

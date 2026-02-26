@@ -1021,6 +1021,23 @@ namespace PrefabBoard.Editor.UI
             return StartExternalDrag(dragItems);
         }
 
+        private static bool IsPrimaryMouseButtonPressed()
+        {
+#if ENABLE_INPUT_SYSTEM
+            var mouse = UnityEngine.InputSystem.Mouse.current;
+            if (mouse != null && mouse.leftButton.isPressed)
+            {
+                return true;
+            }
+#endif
+
+#if ENABLE_LEGACY_INPUT_MANAGER
+            return Input.GetMouseButton(0);
+#else
+            return false;
+#endif
+        }
+
         private void TryStartExternalDragByWindowExit()
         {
             if (_mode != Mode.DragItems || _pointerId < 0 || _dragStartItemPos.Count == 0)
@@ -1028,7 +1045,7 @@ namespace PrefabBoard.Editor.UI
                 return;
             }
 
-            if (!Input.GetMouseButton(0))
+            if (!IsPrimaryMouseButtonPressed())
             {
                 return;
             }
