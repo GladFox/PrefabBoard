@@ -17,11 +17,14 @@
 - Для режима `Control Size` canvas size теперь совпадает с размером элемента (`item.size`) без дополнительного viewport clamp.
 - Для режима `Resolution` размер canvas берётся из выбранного resolution в `GameView`.
 - Добавлен клиппинг canvas/card, чтобы визуал не выходил за границы окна и карточек.
+- Добавлено debug-окно `Tools/PrefabBoard/Preview Debug` с raw кадрами `ScreenSpace/WorldSpace/Final`.
+- Добавлен экспорт debug PNG в `Temp/PrefabBoardPreviewDebug` для разборов проблемных prefab.
 
 ## Известные проблемы
 - Нет автоматизированного integration-теста preview в Unity Editor.
 - Поведение `Auto` основано на эвристике stretch rect и может требовать тонкой подстройки для нестандартных иерархий UI.
 - Требуется ручная проверка, что проблема пустого серого рендера закрыта на целевых префабах.
+- Требуется анализ raw debug-кадров для `Assets/Dialog.prefab` (какой stage даёт серый фон).
 - Внешний drag в Scene/Hierarchy для MVP остаётся на `Ctrl+LMB`.
 
 ## Развитие решений
@@ -31,5 +34,5 @@
   - `git log 25eec60...HEAD` -> `aaa128f feat(editor): add canvas fallback preview for UI prefabs`.
 
 ## Контроль изменений
-- last_checked_commit: d700552
+- last_checked_commit: 1421696
 - last_checked_date: 2026-02-26

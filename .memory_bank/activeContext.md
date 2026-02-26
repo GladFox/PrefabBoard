@@ -1,8 +1,8 @@
 ﻿# Active Context
 
 ## Текущие задачи
-1. Починить отсутствие UI-рендера (серый квадрат) в preview карточек.
-2. Стабилизировать pipeline рендера через выделенный preview rig.
+1. Визуализировать raw рендер-пайплайны preview для диагностики серого кадра.
+2. Дать пользователю инструмент сохранения debug-кадров без debugger attach.
 3. Зафиксировать update в git.
 
 ## Последние изменения
@@ -33,11 +33,15 @@
   - в `Control Size` размер preview canvas теперь равен размеру элемента без viewport-clamp.
   - источник `Resolution` переключён с размера окна инструмента на выбранное разрешение `GameView`.
   - добавлен клиппинг `pb-canvas` и `pb-card`, чтобы карточки/контент не вылезали на toolbar и за границы элемента.
+- Добавлен debug capture pipeline:
+  - `PreviewDebugCapture` хранит последние кадры стадий `ScreenSpace`, `WorldSpace`, `Final`.
+  - `PreviewCache` пишет кадры и notes по каждой стадии, включая fallback-ветки и ошибки.
+  - `PreviewDebugWindow` (`Tools/PrefabBoard/Preview Debug`) показывает raw текстуры и метаданные.
 
 ## Следующие шаги
-1. Ручной smoke-test в Unity Editor на UI prefab с фиксированным размером и full-stretch.
-2. Проверить визуально новый action-блок в правом нижнем углу на карточках разных размеров.
-3. При необходимости добавить выбор режима через контекстное меню карточки.
+1. Снять debug-кадры проблемного prefab (`Dialog.prefab`) из `Preview Debug`.
+2. По кадрам проверить: culling, camera framing, clipping контента.
+3. Внести точечную правку pipeline по фактическому источнику расхождения.
 
 ## План (REQUIREMENTS_OWNER)
 1. Реализовать выбор режима рендера прямо на карточке.

@@ -43,10 +43,12 @@ namespace PrefabBoard.Editor.Services
             var canvasSize = hasUiContent
                 ? ResolveCanvasSize(prefabAsset, renderMode, controlSizeHint, editorResolution)
                 : Vector2Int.zero;
+            PreviewDebugCapture.Begin(prefabGuid, AssetDatabase.GetAssetPath(prefabAsset), renderMode, canvasSize);
 
             var cacheKey = BuildCacheKey(prefabGuid, hasUiContent, renderMode, canvasSize);
             if (Cache.TryGetValue(cacheKey, out var cached) && cached != null)
             {
+                PreviewDebugCapture.SetStageTexture(PreviewDebugStage.Final, cached, "Final: cache hit");
                 return cached;
             }
 
@@ -58,6 +60,7 @@ namespace PrefabBoard.Editor.Services
                     Cache[cacheKey] = customPreview;
                     CustomPreviewKeys.Add(cacheKey);
                     FailedCustomPreviewKeys.Remove(cacheKey);
+                    PreviewDebugCapture.SetStageTexture(PreviewDebugStage.Final, customPreview, "Final: custom UI preview");
                     return customPreview;
                 }
 
@@ -71,6 +74,7 @@ namespace PrefabBoard.Editor.Services
             if (preview != null)
             {
                 Cache[cacheKey] = preview;
+                PreviewDebugCapture.SetStageTexture(PreviewDebugStage.Final, preview, "Final: AssetPreview");
                 return preview;
             }
 
@@ -83,9 +87,11 @@ namespace PrefabBoard.Editor.Services
             if (miniThumbnail != null)
             {
                 Cache[cacheKey] = miniThumbnail;
+                PreviewDebugCapture.SetStageTexture(PreviewDebugStage.Final, miniThumbnail, "Final: mini thumbnail");
                 return miniThumbnail;
             }
 
+            PreviewDebugCapture.SetStageTexture(PreviewDebugStage.Final, null, "Final: prefab icon fallback");
             return GetPrefabIcon();
         }
 
@@ -291,18 +297,24 @@ namespace PrefabBoard.Editor.Services
 
         private static Texture2D TryRenderUiPrefabPreview(GameObject prefabAsset, Vector2Int canvasSize)
         {
+            PreviewDebugCapture.SetStageTexture(PreviewDebugStage.ScreenSpace, null, "ScreenSpace: pending");
+            PreviewDebugCapture.SetStageTexture(PreviewDebugStage.WorldSpace, null, "WorldSpace: pending");
+
             var screenSpace = TryRenderUiPrefabPreviewScreenSpace(prefabAsset, canvasSize);
             if (screenSpace != null)
             {
+                PreviewDebugCapture.SetStageTexture(PreviewDebugStage.Final, screenSpace, "Final: selected ScreenSpace");
                 return screenSpace;
             }
 
             var worldSpace = TryRenderUiPrefabPreviewWorldSpace(prefabAsset, canvasSize);
             if (worldSpace != null)
             {
+                PreviewDebugCapture.SetStageTexture(PreviewDebugStage.Final, worldSpace, "Final: selected WorldSpace");
                 return worldSpace;
             }
 
+            PreviewDebugCapture.SetStageTexture(PreviewDebugStage.Final, null, "Final: both custom pipelines returned null");
             Debug.LogWarning("PrefabBoard: UI preview render produced an empty frame for " + AssetDatabase.GetAssetPath(prefabAsset));
             return null;
         }
@@ -357,6 +369,10 @@ namespace PrefabBoard.Editor.Services
                 };
                 texture.ReadPixels(new Rect(0f, 0f, textureSize.x, textureSize.y), 0, 0);
                 texture.Apply(false, false);
+                PreviewDebugCapture.SetStageTexture(
+                    PreviewDebugStage.ScreenSpace,
+                    texture,
+                    $"ScreenSpace: rendered {textureSize.x}x{textureSize.y}, canvas {canvasSize.x}x{canvasSize.y}, plane {previewCamera.planeDistance:0.###}");
 
                 return texture;
             }
@@ -367,6 +383,7 @@ namespace PrefabBoard.Editor.Services
                     Object.DestroyImmediate(texture);
                 }
 
+                PreviewDebugCapture.SetStageError(PreviewDebugStage.ScreenSpace, ex.Message);
                 Debug.LogWarning("PrefabBoard: ScreenSpace preview failed for " + AssetDatabase.GetAssetPath(prefabAsset) + "\n" + ex.Message);
                 return null;
             }
@@ -469,6 +486,10 @@ namespace PrefabBoard.Editor.Services
                 };
                 texture.ReadPixels(new Rect(0f, 0f, textureSize.x, textureSize.y), 0, 0);
                 texture.Apply(false, false);
+                PreviewDebugCapture.SetStageTexture(
+                    PreviewDebugStage.WorldSpace,
+                    texture,
+                    $"WorldSpace: rendered {textureSize.x}x{textureSize.y}, bounds center {bounds.center}, size {bounds.size}");
 
                 return texture;
             }
@@ -479,6 +500,7 @@ namespace PrefabBoard.Editor.Services
                     Object.DestroyImmediate(texture);
                 }
 
+                PreviewDebugCapture.SetStageError(PreviewDebugStage.WorldSpace, ex.Message);
                 Debug.LogWarning("PrefabBoard: WorldSpace preview failed for " + AssetDatabase.GetAssetPath(prefabAsset) + "\n" + ex.Message);
                 return null;
             }

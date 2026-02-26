@@ -23,11 +23,14 @@ Editor-only инструмент `Prefab Board` на Unity UI Toolkit:
   - `BoardRepository`
   - `AssetGuidUtils`
   - `PreviewCache`
+  - `PreviewDebugCapture`
+  - `GameViewResolutionUtils`
   - `BoardUndo`
 - `PrefabBoard/Assets/Editor/PrefabBoard/UI`
   - `PrefabBoardWindow`
   - `BoardCanvasElement`
   - `PrefabCardElement`
+  - `PreviewDebugWindow`
   - `GroupFrameElement`
   - `SelectionOverlayElement`
   - `BoardToolbarElement`
@@ -101,6 +104,10 @@ UI preview рендерится через временный rig в preview sce
 - `ScreenSpaceCamera Canvas`
 - `Content` контейнер, в который инстанцируется prefab
 Если screen-space кадр пустой, выполняется fallback world-space рендер.
+Для диагностики доступно окно `Tools/PrefabBoard/Preview Debug`:
+- показывает raw кадры `ScreenSpace`, `WorldSpace`, `Final`
+- показывает метаданные (prefab path, mode, canvas size, время)
+- умеет сохранять PNG в `Temp/PrefabBoardPreviewDebug`
 
 Canvas и карточки клиппируются по своим границам, чтобы контент не выходил поверх toolbar и за пределы элемента.
 
