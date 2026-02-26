@@ -13,7 +13,7 @@ namespace PrefabBoard.Editor.Services
 
             try
             {
-                var editorAssembly = typeof(Editor).Assembly;
+                var editorAssembly = typeof(UnityEditor.Editor).Assembly;
                 var gameViewType = editorAssembly.GetType("UnityEditor.GameView");
                 if (gameViewType == null)
                 {
