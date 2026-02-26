@@ -587,16 +587,13 @@ namespace PrefabBoard.Editor.Services
             canvasRect.anchoredPosition = Vector2.zero;
 
             var canvas = canvasObject.GetComponent<Canvas>();
-            canvas.renderMode = RenderMode.ScreenSpaceCamera;
+            canvas.renderMode = RenderMode.WorldSpace;
             canvas.worldCamera = previewCamera;
-            canvas.planeDistance = 1f;
             canvas.pixelPerfect = false;
 
             var scaler = canvasObject.GetComponent<CanvasScaler>();
-            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-            scaler.referenceResolution = new Vector2(canvasSize.x, canvasSize.y);
-            scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
-            scaler.matchWidthOrHeight = 0.5f;
+            scaler.uiScaleMode = CanvasScaler.ScaleMode.ConstantPixelSize;
+            scaler.scaleFactor = 1f;
             scaler.referencePixelsPerUnit = 100f;
 
             return canvasRect;
