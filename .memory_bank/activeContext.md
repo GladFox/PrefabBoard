@@ -7,9 +7,13 @@
    - single-control
 3. Обеспечить совместимость drag-out fallback с `Input System` и `Legacy Input`.
 4. Расширить zoom-out диапазон доски.
-5. Обновить документацию и зафиксировать изменения в git.
+5. Убрать дедупликацию элементов при drag-out в Scene/Hierarchy.
+6. Обновить документацию и зафиксировать изменения в git.
 
 ## Последние изменения (текущая сессия)
+- В drag-out в Scene/Hierarchy убрана проверка уникальности элементов при сборке payload:
+  - удалён фильтр `dragItems.All(...)` в `TryStartExternalDragFromCurrentDrag`;
+  - payload формируется напрямую из текущего набора перетаскиваемых карточек, поэтому повторяющиеся карточки одного prefab не отбрасываются.
 - Расширен zoom-out диапазон доски:
   - новый дефолт `BoardViewSettings.minZoom = 0.02` для новых досок;
   - в `BoardCanvasElement` минимум зума ограничен сверху значением `0.02`, чтобы старые доски с legacy `minZoom=0.2` тоже могли отъезжать дальше без ручной миграции.
@@ -104,24 +108,24 @@
 - Добавлены fallback'и для `Image` без sprite и world-space fallback pipeline.
 
 ## Следующие шаги
-1. В Unity проверить новый zoom-out: wheel zoom до минимума и `FrameSelection()` на больших досках.
-2. Подтвердить, что старые board assets (с `minZoom=0.2`) теперь тоже уходят до нового минимума.
-3. После smoke-проверки вернуться к ручной валидации drag-out в `Input System`/`Legacy`/`Both`.
+1. В Unity проверить drag-out нескольких карточек с одинаковым prefab и убедиться, что все экземпляры создаются в Scene/Hierarchy.
+2. Проверить drag-out в `Input System`/`Legacy`/`Both`.
+3. Отдельно прогнать zoom-out smoke (`wheel` + `FrameSelection`) на больших досках.
 
 ## План (REQUIREMENTS_OWNER)
-1. Найти текущие clamp-ограничения зума в `BoardCanvasElement` и дефолты в `BoardViewSettings`.
-2. Снизить minimum zoom для новых и существующих досок без миграции assets.
+1. Найти и убрать проверку уникальности в сборке drag-out payload.
+2. Сохранить текущий UX drag-out (триггеры/режимы) без дополнительных изменений.
 3. Обновить Memory Bank, зафиксировать и отправить изменения.
 
 ## Стратегия (ARCHITECT)
-- Изменить только zoom-конфиг и clamp-логику без затрагивания pan/drag/grid pipeline.
-- Для обратной совместимости применить runtime-cap минимума, чтобы legacy boards получили новый диапазон автоматически.
+- Изменить только сбор payload для внешнего drag без изменения механики старта drag.
+- Оперировать карточками (BoardItemData), не вводить фильтрацию по prefabGuid.
 
 ## REVIEWER checklist
-- Новый минимум зума применяется к старым и новым доскам.
-- `FrameSelection` и колесо используют обновлённые лимиты `MinZoom/MaxZoom`.
+- В drag-out payload нет дедупликации карточек.
+- Повторяющиеся prefab карточки не отбрасываются на этапе сборки payload.
 - Документация и Memory Bank синхронизированы.
 
 ## QA_TESTER заметки
 - Автоматический Unity compile/smoke в этой среде не запускался.
-- Нужна ручная проверка в Unity Editor (zoom-out range + `FrameSelection` smoke).
+- Нужна ручная проверка в Unity Editor (multi-drag одинаковых prefab в Scene/Hierarchy).

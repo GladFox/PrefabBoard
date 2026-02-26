@@ -1009,18 +1009,22 @@ namespace PrefabBoard.Editor.UI
             }
 
             var dragItems = new List<BoardItemData>();
-            var primary = !string.IsNullOrEmpty(_dragPrimaryItemId) ? FindItem(_dragPrimaryItemId) : null;
-            if (primary != null)
-            {
-                dragItems.Add(primary);
-            }
-
             foreach (var kv in _dragStartItemPos)
             {
                 var item = FindItem(kv.Key);
-                if (item != null && dragItems.All(x => x.id != item.id))
+                if (item != null)
                 {
                     dragItems.Add(item);
+                }
+            }
+
+            // Fallback for edge cases when drag state has primary item but drag map is empty.
+            if (dragItems.Count == 0 && !string.IsNullOrEmpty(_dragPrimaryItemId))
+            {
+                var primary = FindItem(_dragPrimaryItemId);
+                if (primary != null)
+                {
+                    dragItems.Add(primary);
                 }
             }
 
