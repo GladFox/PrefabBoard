@@ -11,6 +11,24 @@ namespace PrefabBoard.Editor.Services
 {
     public static class PreviewCache
     {
+        private enum PreviewContentFitMode
+        {
+            Auto = 0,
+            Fullscreen = 1,
+            SingleControl = 2
+        }
+
+        private sealed class PreviewRigObjects
+        {
+            public GameObject rootObject;
+            public GameObject cameraObject;
+            public Camera camera;
+            public GameObject canvasObject;
+            public RectTransform canvasRect;
+            public GameObject contentObject;
+            public RectTransform contentRect;
+        }
+
         private const int UiLayer = 5;
         private const int DefaultResolutionWidth = 1920;
         private const int DefaultResolutionHeight = 1080;
@@ -59,7 +77,7 @@ namespace PrefabBoard.Editor.Services
 
             if (hasUiContent && !FailedCustomPreviewKeys.Contains(cacheKey))
             {
-                var customPreview = TryRenderUiPrefabPreview(prefabAsset, canvasSize);
+                var customPreview = TryRenderUiPrefabPreview(prefabAsset, canvasSize, renderMode);
                 if (customPreview != null)
                 {
                     Cache[cacheKey] = customPreview;
@@ -152,10 +170,20 @@ namespace PrefabBoard.Editor.Services
                 return false;
             }
 
-            return TryCreateTestScene(prefabGuid, PreviewDebugCapture.CanvasSize, scenePath, out error);
+            return TryCreateTestScene(prefabGuid, PreviewDebugCapture.CanvasSize, PreviewDebugCapture.RenderMode, scenePath, out error);
         }
 
         public static bool TryCreateTestScene(string prefabGuid, Vector2Int canvasSize, string scenePath, out string error)
+        {
+            return TryCreateTestScene(prefabGuid, canvasSize, BoardItemPreviewRenderMode.Auto, scenePath, out error);
+        }
+
+        public static bool TryCreateTestScene(
+            string prefabGuid,
+            Vector2Int canvasSize,
+            BoardItemPreviewRenderMode renderMode,
+            string scenePath,
+            out string error)
         {
             error = string.Empty;
 
@@ -171,7 +199,7 @@ namespace PrefabBoard.Editor.Services
                 return false;
             }
 
-            return TryCreateTestScene(prefabAsset, canvasSize, scenePath, out error);
+            return TryCreateTestScene(prefabAsset, canvasSize, renderMode, scenePath, out error);
         }
 
         private static Texture2D GetPrefabIcon()
@@ -184,7 +212,12 @@ namespace PrefabBoard.Editor.Services
             return EditorGUIUtility.IconContent("console.erroricon").image as Texture2D;
         }
 
-        private static bool TryCreateTestScene(GameObject prefabAsset, Vector2Int canvasSize, string scenePath, out string error)
+        private static bool TryCreateTestScene(
+            GameObject prefabAsset,
+            Vector2Int canvasSize,
+            BoardItemPreviewRenderMode renderMode,
+            string scenePath,
+            out string error)
         {
             error = string.Empty;
 
@@ -218,26 +251,33 @@ namespace PrefabBoard.Editor.Services
 
             try
             {
-                var instance = PrefabUtility.InstantiatePrefab(prefabAsset, testScene) as GameObject;
+                var instance = Object.Instantiate(prefabAsset);
                 if (instance == null)
                 {
                     error = "Failed to instantiate prefab in scene: " + AssetDatabase.GetAssetPath(prefabAsset);
                     return false;
                 }
 
+                SceneManager.MoveGameObjectToScene(instance, testScene);
                 instance.name = prefabAsset.name;
                 instance.transform.position = Vector3.zero;
                 instance.transform.rotation = Quaternion.identity;
                 instance.transform.localScale = Vector3.one;
-                SetLayerRecursively(instance, UiLayer);
+                if (ShouldForceUiLayer())
+                {
+                    SetLayerRecursively(instance, UiLayer);
+                }
 
-                var previewCamera = CreatePreviewCamera(testScene, safeCanvasSize, false, out _);
-                var previewCanvas = CreatePreviewCanvas(testScene, previewCamera, safeCanvasSize, false, out _);
-                var previewContent = CreatePreviewContent(testScene, previewCanvas, false, out _);
+                var rig = CreatePreviewRig(testScene, safeCanvasSize, false, out var rigError);
+                if (rig == null || rig.camera == null || rig.contentRect == null)
+                {
+                    error = "Failed to build preview rig for test scene. " + rigError;
+                    return false;
+                }
 
-                AttachInstanceToPreviewContent(instance, previewContent, safeCanvasSize);
-                EnsureImagesHaveSprite(instance);
-                PrepareUiForPreviewScreenSpace(instance, previewCamera, safeCanvasSize);
+                var fitMode = ResolveContentFitMode(renderMode);
+                AttachInstanceToPreviewContent(instance, rig.contentRect, safeCanvasSize, fitMode);
+                PrepareUiForPreviewScreenSpace(instance, rig.camera, safeCanvasSize);
                 Canvas.ForceUpdateCanvases();
                 Canvas.ForceUpdateCanvases();
 
@@ -362,6 +402,21 @@ namespace PrefabBoard.Editor.Services
             return IsStretchToScreenPrefab(prefabAsset) ? resolutionSize : controlSize;
         }
 
+        private static PreviewContentFitMode ResolveContentFitMode(BoardItemPreviewRenderMode renderMode)
+        {
+            if (renderMode == BoardItemPreviewRenderMode.Resolution)
+            {
+                return PreviewContentFitMode.Fullscreen;
+            }
+
+            if (renderMode == BoardItemPreviewRenderMode.ControlSize)
+            {
+                return PreviewContentFitMode.SingleControl;
+            }
+
+            return PreviewContentFitMode.Auto;
+        }
+
         private static Vector2Int ResolveControlSize(GameObject prefabAsset, Vector2 controlSizeHint, Vector2Int resolutionSize)
         {
             var hinted = SanitizeCanvasSize(controlSizeHint, new Vector2Int(0, 0));
@@ -454,12 +509,15 @@ namespace PrefabBoard.Editor.Services
                 Mathf.Clamp(height, MinCanvasSize, MaxCanvasSize));
         }
 
-        private static Texture2D TryRenderUiPrefabPreview(GameObject prefabAsset, Vector2Int canvasSize)
+        private static Texture2D TryRenderUiPrefabPreview(
+            GameObject prefabAsset,
+            Vector2Int canvasSize,
+            BoardItemPreviewRenderMode renderMode)
         {
             PreviewDebugCapture.SetStageTexture(PreviewDebugStage.ScreenSpace, null, "ScreenSpace: pending");
             PreviewDebugCapture.SetStageTexture(PreviewDebugStage.WorldSpace, null, "WorldSpace: pending");
 
-            var screenSpace = TryRenderUiPrefabPreviewScreenSpace(prefabAsset, canvasSize);
+            var screenSpace = TryRenderUiPrefabPreviewScreenSpace(prefabAsset, canvasSize, renderMode);
             if (screenSpace != null)
             {
                 if (!IsFlatTexture(screenSpace))
@@ -468,7 +526,7 @@ namespace PrefabBoard.Editor.Services
                     return screenSpace;
                 }
 
-                var worldAfterFlatScreen = TryRenderUiPrefabPreviewWorldSpace(prefabAsset, canvasSize);
+                var worldAfterFlatScreen = TryRenderUiPrefabPreviewWorldSpace(prefabAsset, canvasSize, renderMode);
                 if (worldAfterFlatScreen != null && !IsFlatTexture(worldAfterFlatScreen))
                 {
                     Object.DestroyImmediate(screenSpace);
@@ -485,7 +543,7 @@ namespace PrefabBoard.Editor.Services
                 return screenSpace;
             }
 
-            var worldSpace = TryRenderUiPrefabPreviewWorldSpace(prefabAsset, canvasSize);
+            var worldSpace = TryRenderUiPrefabPreviewWorldSpace(prefabAsset, canvasSize, renderMode);
             if (worldSpace != null)
             {
                 PreviewDebugCapture.SetStageTexture(PreviewDebugStage.Final, worldSpace, "Final: selected WorldSpace");
@@ -497,15 +555,16 @@ namespace PrefabBoard.Editor.Services
             return null;
         }
 
-        private static Texture2D TryRenderUiPrefabPreviewScreenSpace(GameObject prefabAsset, Vector2Int canvasSize)
+        private static Texture2D TryRenderUiPrefabPreviewScreenSpace(
+            GameObject prefabAsset,
+            Vector2Int canvasSize,
+            BoardItemPreviewRenderMode renderMode)
         {
             Scene previewScene = default;
             var sceneCreated = false;
 
             GameObject instance = null;
-            GameObject cameraObject = null;
-            GameObject canvasObject = null;
-            GameObject contentObject = null;
+            PreviewRigObjects rig = null;
             RenderTexture renderTexture = null;
             Texture2D texture = null;
             var previousActive = RenderTexture.active;
@@ -515,32 +574,40 @@ namespace PrefabBoard.Editor.Services
                 previewScene = EditorSceneManager.NewPreviewScene();
                 sceneCreated = true;
 
-                instance = PrefabUtility.InstantiatePrefab(prefabAsset, previewScene) as GameObject;
+                instance = Object.Instantiate(prefabAsset);
                 if (instance == null)
                 {
                     return null;
                 }
 
+                SceneManager.MoveGameObjectToScene(instance, previewScene);
                 instance.hideFlags = HideFlags.HideAndDontSave;
                 instance.transform.position = Vector3.zero;
                 instance.transform.rotation = Quaternion.identity;
                 instance.transform.localScale = Vector3.one;
-                SetLayerRecursively(instance, UiLayer);
+                if (ShouldForceUiLayer())
+                {
+                    SetLayerRecursively(instance, UiLayer);
+                }
 
                 var textureSize = ComputeTextureSize(canvasSize);
-                var previewCamera = CreatePreviewCamera(previewScene, canvasSize, out cameraObject);
-                var previewCanvas = CreatePreviewCanvas(previewScene, previewCamera, canvasSize, out canvasObject);
-                var previewContent = CreatePreviewContent(previewScene, previewCanvas, out contentObject);
+                rig = CreatePreviewRig(previewScene, canvasSize, true, out var rigError);
+                if (rig == null || rig.camera == null || rig.contentRect == null)
+                {
+                    Debug.LogWarning("PrefabBoard: ScreenSpace preview rig setup failed for " + AssetDatabase.GetAssetPath(prefabAsset) + ". " + rigError);
+                    return null;
+                }
 
-                AttachInstanceToPreviewContent(instance, previewContent, canvasSize);
+                var fitMode = ResolveContentFitMode(renderMode);
+                AttachInstanceToPreviewContent(instance, rig.contentRect, canvasSize, fitMode);
                 var fallbackImageCount = EnsureImagesHaveSprite(instance);
-                PrepareUiForPreviewScreenSpace(instance, previewCamera, canvasSize);
+                PrepareUiForPreviewScreenSpace(instance, rig.camera, canvasSize);
 
                 renderTexture = RenderTexture.GetTemporary(textureSize.x, textureSize.y, 24, RenderTextureFormat.ARGB32);
-                previewCamera.targetTexture = renderTexture;
+                rig.camera.targetTexture = renderTexture;
                 Canvas.ForceUpdateCanvases();
                 Canvas.ForceUpdateCanvases();
-                previewCamera.Render();
+                rig.camera.Render();
 
                 RenderTexture.active = renderTexture;
                 texture = new Texture2D(textureSize.x, textureSize.y, TextureFormat.RGBA32, false)
@@ -576,19 +643,9 @@ namespace PrefabBoard.Editor.Services
                     RenderTexture.ReleaseTemporary(renderTexture);
                 }
 
-                if (contentObject != null)
+                if (rig != null && rig.rootObject != null)
                 {
-                    Object.DestroyImmediate(contentObject);
-                }
-
-                if (canvasObject != null)
-                {
-                    Object.DestroyImmediate(canvasObject);
-                }
-
-                if (cameraObject != null)
-                {
-                    Object.DestroyImmediate(cameraObject);
+                    Object.DestroyImmediate(rig.rootObject);
                 }
 
                 if (instance != null)
@@ -603,7 +660,10 @@ namespace PrefabBoard.Editor.Services
             }
         }
 
-        private static Texture2D TryRenderUiPrefabPreviewWorldSpace(GameObject prefabAsset, Vector2Int canvasSize)
+        private static Texture2D TryRenderUiPrefabPreviewWorldSpace(
+            GameObject prefabAsset,
+            Vector2Int canvasSize,
+            BoardItemPreviewRenderMode renderMode)
         {
             Scene previewScene = default;
             var sceneCreated = false;
@@ -619,12 +679,13 @@ namespace PrefabBoard.Editor.Services
                 previewScene = EditorSceneManager.NewPreviewScene();
                 sceneCreated = true;
 
-                instance = PrefabUtility.InstantiatePrefab(prefabAsset, previewScene) as GameObject;
+                instance = Object.Instantiate(prefabAsset);
                 if (instance == null)
                 {
                     return null;
                 }
 
+                SceneManager.MoveGameObjectToScene(instance, previewScene);
                 instance.hideFlags = HideFlags.HideAndDontSave;
                 instance.transform.position = Vector3.zero;
                 instance.transform.rotation = Quaternion.identity;
@@ -648,11 +709,12 @@ namespace PrefabBoard.Editor.Services
                 SceneManager.MoveGameObjectToScene(cameraObject, previewScene);
 
                 var camera = cameraObject.AddComponent<Camera>();
+                var settings = PreviewRigSettingsProvider.TryGetSettings();
                 camera.clearFlags = CameraClearFlags.SolidColor;
-                camera.backgroundColor = new Color(0.16f, 0.16f, 0.16f, 1f);
+                camera.backgroundColor = settings != null ? settings.cameraBackground : new Color(0.16f, 0.16f, 0.16f, 1f);
                 camera.orthographic = true;
-                camera.nearClipPlane = 0.01f;
-                camera.farClipPlane = 1000f;
+                camera.nearClipPlane = settings != null ? Mathf.Max(0.001f, settings.nearClipPlane) : 0.01f;
+                camera.farClipPlane = settings != null ? Mathf.Max(camera.nearClipPlane + 0.1f, settings.farClipPlane) : 1000f;
 
                 PositionPreviewCamera(camera, bounds, aspect);
 
@@ -711,91 +773,295 @@ namespace PrefabBoard.Editor.Services
             }
         }
 
-        private static Camera CreatePreviewCamera(Scene previewScene, Vector2Int canvasSize, out GameObject cameraObject)
+        private static PreviewRigObjects CreatePreviewRig(Scene previewScene, Vector2Int canvasSize, bool hidden, out string error)
         {
-            return CreatePreviewCamera(previewScene, canvasSize, true, out cameraObject);
+            error = string.Empty;
+            var settings = PreviewRigSettingsProvider.TryGetSettings();
+
+            if (settings != null &&
+                settings.rigSource == PreviewRigSource.PrefabTemplate &&
+                settings.rigPrefab != null)
+            {
+                var templateRig = CreatePreviewRigFromTemplate(previewScene, canvasSize, hidden, settings, out error);
+                if (templateRig != null)
+                {
+                    return templateRig;
+                }
+            }
+
+            return CreateBuiltInPreviewRig(previewScene, canvasSize, hidden, settings);
         }
 
-        private static Camera CreatePreviewCamera(Scene previewScene, Vector2Int canvasSize, bool hidden, out GameObject cameraObject)
+        private static PreviewRigObjects CreateBuiltInPreviewRig(
+            Scene previewScene,
+            Vector2Int canvasSize,
+            bool hidden,
+            PreviewRigSettingsAsset settings)
         {
-            cameraObject = new GameObject("PrefabBoardPreviewCamera");
-            cameraObject.hideFlags = hidden ? HideFlags.HideAndDontSave : HideFlags.None;
-            cameraObject.layer = UiLayer;
-            SceneManager.MoveGameObjectToScene(cameraObject, previewScene);
+            var rig = new PreviewRigObjects
+            {
+                rootObject = new GameObject("PrefabBoardPreviewRig")
+            };
+            rig.rootObject.hideFlags = hidden ? HideFlags.HideAndDontSave : HideFlags.None;
+            SceneManager.MoveGameObjectToScene(rig.rootObject, previewScene);
+            if (settings == null || settings.forceUiLayer)
+            {
+                SetLayerRecursively(rig.rootObject, UiLayer);
+            }
 
-            var camera = cameraObject.AddComponent<Camera>();
+            rig.cameraObject = new GameObject("PrefabBoardPreviewCamera", typeof(Camera));
+            rig.cameraObject.hideFlags = hidden ? HideFlags.HideAndDontSave : HideFlags.None;
+            rig.cameraObject.transform.SetParent(rig.rootObject.transform, false);
+            rig.camera = rig.cameraObject.GetComponent<Camera>();
+            ConfigurePreviewCamera(rig.camera, canvasSize, settings, true);
+
+            rig.canvasObject = new GameObject("PrefabBoardPreviewCanvas", typeof(RectTransform), typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
+            rig.canvasObject.hideFlags = hidden ? HideFlags.HideAndDontSave : HideFlags.None;
+            rig.canvasObject.transform.SetParent(rig.rootObject.transform, false);
+            rig.canvasRect = rig.canvasObject.GetComponent<RectTransform>();
+            var canvas = rig.canvasObject.GetComponent<Canvas>();
+            var scaler = rig.canvasObject.GetComponent<CanvasScaler>();
+            ConfigurePreviewCanvas(rig.canvasRect, canvas, scaler, rig.camera, canvasSize, settings);
+
+            rig.contentObject = new GameObject("Content", typeof(RectTransform));
+            rig.contentObject.hideFlags = hidden ? HideFlags.HideAndDontSave : HideFlags.None;
+            rig.contentObject.transform.SetParent(rig.canvasRect, false);
+            rig.contentRect = rig.contentObject.GetComponent<RectTransform>();
+            ConfigurePreviewContent(rig.contentRect);
+
+            if (settings == null || settings.forceUiLayer)
+            {
+                SetLayerRecursively(rig.rootObject, UiLayer);
+            }
+
+            return rig;
+        }
+
+        private static PreviewRigObjects CreatePreviewRigFromTemplate(
+            Scene previewScene,
+            Vector2Int canvasSize,
+            bool hidden,
+            PreviewRigSettingsAsset settings,
+            out string error)
+        {
+            error = string.Empty;
+            var rigRoot = Object.Instantiate(settings.rigPrefab);
+            if (rigRoot == null)
+            {
+                error = "Failed to instantiate rig prefab.";
+                return null;
+            }
+
+            rigRoot.name = "PrefabBoardPreviewRig";
+            rigRoot.hideFlags = hidden ? HideFlags.HideAndDontSave : HideFlags.None;
+            SceneManager.MoveGameObjectToScene(rigRoot, previewScene);
+            ApplyHideFlagsRecursively(rigRoot, hidden ? HideFlags.HideAndDontSave : HideFlags.None);
+            if (settings.forceUiLayer)
+            {
+                SetLayerRecursively(rigRoot, UiLayer);
+            }
+
+            var camera = ResolveComponent<Camera>(rigRoot.transform, settings.cameraPath);
+            var canvas = ResolveComponent<Canvas>(rigRoot.transform, settings.canvasPath);
+            if (camera == null || canvas == null)
+            {
+                Object.DestroyImmediate(rigRoot);
+                error = "Rig prefab must contain Camera and Canvas.";
+                return null;
+            }
+
+            var canvasRect = canvas.GetComponent<RectTransform>();
+            if (canvasRect == null)
+            {
+                Object.DestroyImmediate(rigRoot);
+                error = "Rig prefab Canvas object must have RectTransform.";
+                return null;
+            }
+
+            var contentRect = ResolveContentRect(rigRoot.transform, canvasRect, settings.contentPath, hidden);
+
+            var scaler = canvas.GetComponent<CanvasScaler>();
+            if (scaler == null)
+            {
+                scaler = canvas.gameObject.AddComponent<CanvasScaler>();
+            }
+
+            if (canvas.GetComponent<GraphicRaycaster>() == null)
+            {
+                canvas.gameObject.AddComponent<GraphicRaycaster>();
+            }
+
+            ConfigurePreviewCamera(camera, canvasSize, settings, false);
+            ConfigurePreviewCanvas(canvasRect, canvas, scaler, camera, canvasSize, settings);
+            ConfigurePreviewContent(contentRect);
+
+            return new PreviewRigObjects
+            {
+                rootObject = rigRoot,
+                cameraObject = camera.gameObject,
+                camera = camera,
+                canvasObject = canvas.gameObject,
+                canvasRect = canvasRect,
+                contentObject = contentRect.gameObject,
+                contentRect = contentRect
+            };
+        }
+
+        private static RectTransform ResolveContentRect(
+            Transform rigRoot,
+            RectTransform canvasRect,
+            string contentPath,
+            bool hidden)
+        {
+            var contentRect = ResolveComponent<RectTransform>(rigRoot, contentPath);
+            if (contentRect == null)
+            {
+                var byName = canvasRect.Find("Content");
+                contentRect = byName as RectTransform;
+            }
+
+            if (contentRect == null)
+            {
+                var contentObject = new GameObject("Content", typeof(RectTransform));
+                contentObject.hideFlags = hidden ? HideFlags.HideAndDontSave : HideFlags.None;
+                contentRect = contentObject.GetComponent<RectTransform>();
+                contentRect.SetParent(canvasRect, false);
+            }
+            else if (contentRect.parent != canvasRect)
+            {
+                contentRect.SetParent(canvasRect, false);
+            }
+
+            return contentRect;
+        }
+
+        private static T ResolveComponent<T>(Transform root, string relativePath) where T : Component
+        {
+            if (root == null)
+            {
+                return null;
+            }
+
+            if (!string.IsNullOrWhiteSpace(relativePath))
+            {
+                var direct = root.Find(relativePath);
+                if (direct != null)
+                {
+                    var directComponent = direct.GetComponent<T>();
+                    if (directComponent != null)
+                    {
+                        return directComponent;
+                    }
+                }
+            }
+
+            return root.GetComponentInChildren<T>(true);
+        }
+
+        private static void ConfigurePreviewCamera(
+            Camera camera,
+            Vector2Int canvasSize,
+            PreviewRigSettingsAsset settings,
+            bool applyDefaultTransform)
+        {
+            if (camera == null)
+            {
+                return;
+            }
+
+            var background = settings != null ? settings.cameraBackground : new Color(0.16f, 0.16f, 0.16f, 1f);
+            var nearClip = settings != null ? Mathf.Max(0.001f, settings.nearClipPlane) : 0.01f;
+            var farClip = settings != null ? Mathf.Max(nearClip + 0.1f, settings.farClipPlane) : 200f;
+
             camera.clearFlags = CameraClearFlags.SolidColor;
-            camera.backgroundColor = new Color(0.16f, 0.16f, 0.16f, 1f);
-            camera.cullingMask = 1 << UiLayer;
-            camera.nearClipPlane = 0.01f;
-            camera.farClipPlane = 200f;
+            camera.backgroundColor = background;
+            if (settings == null || settings.forceUiLayer)
+            {
+                camera.cullingMask = 1 << UiLayer;
+            }
+            camera.nearClipPlane = nearClip;
+            camera.farClipPlane = farClip;
             camera.orthographic = true;
             camera.orthographicSize = Mathf.Max(1f, canvasSize.y * 0.5f);
             camera.aspect = Mathf.Max(0.01f, canvasSize.x / (float)canvasSize.y);
-            camera.transform.position = new Vector3(0f, 0f, -10f);
-            camera.transform.rotation = Quaternion.identity;
-            return camera;
+
+            if (applyDefaultTransform)
+            {
+                camera.transform.localPosition = new Vector3(0f, 0f, -10f);
+                camera.transform.localRotation = Quaternion.identity;
+                camera.transform.localScale = Vector3.one;
+            }
         }
 
-        private static RectTransform CreatePreviewCanvas(Scene previewScene, Camera previewCamera, Vector2Int canvasSize, out GameObject canvasObject)
+        private static void ConfigurePreviewCanvas(
+            RectTransform canvasRect,
+            Canvas canvas,
+            CanvasScaler scaler,
+            Camera previewCamera,
+            Vector2Int canvasSize,
+            PreviewRigSettingsAsset settings)
         {
-            return CreatePreviewCanvas(previewScene, previewCamera, canvasSize, true, out canvasObject);
-        }
+            if (canvasRect == null || canvas == null || scaler == null)
+            {
+                return;
+            }
 
-        private static RectTransform CreatePreviewCanvas(Scene previewScene, Camera previewCamera, Vector2Int canvasSize, bool hidden, out GameObject canvasObject)
-        {
-            canvasObject = new GameObject("PrefabBoardPreviewCanvas", typeof(RectTransform), typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
-            canvasObject.hideFlags = hidden ? HideFlags.HideAndDontSave : HideFlags.None;
-            canvasObject.layer = UiLayer;
-            SceneManager.MoveGameObjectToScene(canvasObject, previewScene);
-
-            var canvasRect = canvasObject.GetComponent<RectTransform>();
             canvasRect.anchorMin = new Vector2(0.5f, 0.5f);
             canvasRect.anchorMax = new Vector2(0.5f, 0.5f);
             canvasRect.pivot = new Vector2(0.5f, 0.5f);
             canvasRect.sizeDelta = new Vector2(canvasSize.x, canvasSize.y);
             canvasRect.anchoredPosition = Vector2.zero;
 
-            var canvas = canvasObject.GetComponent<Canvas>();
             canvas.renderMode = RenderMode.ScreenSpaceCamera;
             canvas.worldCamera = previewCamera;
-            canvas.planeDistance = 1f;
+            canvas.planeDistance = settings != null ? Mathf.Max(0.01f, settings.planeDistance) : 1f;
             canvas.pixelPerfect = false;
 
-            var scaler = canvasObject.GetComponent<CanvasScaler>();
             scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
             scaler.referenceResolution = new Vector2(canvasSize.x, canvasSize.y);
             scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
             scaler.matchWidthOrHeight = 0.5f;
             scaler.referencePixelsPerUnit = 100f;
-
-            return canvasRect;
         }
 
-        private static RectTransform CreatePreviewContent(Scene previewScene, RectTransform canvasRect, out GameObject contentObject)
+        private static void ConfigurePreviewContent(RectTransform contentRect)
         {
-            return CreatePreviewContent(previewScene, canvasRect, true, out contentObject);
-        }
+            if (contentRect == null)
+            {
+                return;
+            }
 
-        private static RectTransform CreatePreviewContent(Scene previewScene, RectTransform canvasRect, bool hidden, out GameObject contentObject)
-        {
-            contentObject = new GameObject("Content", typeof(RectTransform));
-            contentObject.hideFlags = hidden ? HideFlags.HideAndDontSave : HideFlags.None;
-            contentObject.layer = UiLayer;
-            SceneManager.MoveGameObjectToScene(contentObject, previewScene);
-
-            var contentRect = contentObject.GetComponent<RectTransform>();
-            contentRect.SetParent(canvasRect, false);
             contentRect.anchorMin = Vector2.zero;
             contentRect.anchorMax = Vector2.one;
             contentRect.offsetMin = Vector2.zero;
             contentRect.offsetMax = Vector2.zero;
             contentRect.pivot = new Vector2(0.5f, 0.5f);
             contentRect.anchoredPosition = Vector2.zero;
-            return contentRect;
+            contentRect.sizeDelta = Vector2.zero;
         }
 
-        private static void AttachInstanceToPreviewContent(GameObject instance, RectTransform contentRect, Vector2Int canvasSize)
+        private static void ApplyHideFlagsRecursively(GameObject root, HideFlags hideFlags)
+        {
+            if (root == null)
+            {
+                return;
+            }
+
+            var transforms = root.GetComponentsInChildren<Transform>(true);
+            foreach (var tr in transforms)
+            {
+                if (tr != null)
+                {
+                    tr.gameObject.hideFlags = hideFlags;
+                }
+            }
+        }
+
+        private static void AttachInstanceToPreviewContent(
+            GameObject instance,
+            RectTransform contentRect,
+            Vector2Int canvasSize,
+            PreviewContentFitMode fitMode)
         {
             if (instance == null || contentRect == null)
             {
@@ -806,22 +1072,7 @@ namespace PrefabBoard.Editor.Services
             {
                 rootRect.SetParent(contentRect, false);
                 rootRect.localScale = Vector3.one;
-
-                if (IsStretchRect(rootRect))
-                {
-                    rootRect.offsetMin = Vector2.zero;
-                    rootRect.offsetMax = Vector2.zero;
-                }
-                else
-                {
-                    rootRect.anchorMin = new Vector2(0.5f, 0.5f);
-                    rootRect.anchorMax = new Vector2(0.5f, 0.5f);
-                    rootRect.anchoredPosition = Vector2.zero;
-                    if (rootRect.rect.width < 1f || rootRect.rect.height < 1f)
-                    {
-                        rootRect.sizeDelta = new Vector2(Mathf.Min(canvasSize.x, 512), Mathf.Min(canvasSize.y, 512));
-                    }
-                }
+                ApplyContentFit(rootRect, canvasSize, fitMode);
 
                 return;
             }
@@ -832,12 +1083,70 @@ namespace PrefabBoard.Editor.Services
             instance.transform.localScale = Vector3.one;
         }
 
+        private static void ApplyContentFit(RectTransform rootRect, Vector2Int canvasSize, PreviewContentFitMode fitMode)
+        {
+            if (rootRect == null)
+            {
+                return;
+            }
+
+            if (fitMode == PreviewContentFitMode.Fullscreen)
+            {
+                rootRect.anchorMin = Vector2.zero;
+                rootRect.anchorMax = Vector2.one;
+                rootRect.pivot = new Vector2(0.5f, 0.5f);
+                rootRect.anchoredPosition = Vector2.zero;
+                rootRect.offsetMin = Vector2.zero;
+                rootRect.offsetMax = Vector2.zero;
+                rootRect.sizeDelta = Vector2.zero;
+                return;
+            }
+
+            if (fitMode == PreviewContentFitMode.SingleControl)
+            {
+                rootRect.anchorMin = new Vector2(0.5f, 0.5f);
+                rootRect.anchorMax = new Vector2(0.5f, 0.5f);
+                rootRect.pivot = new Vector2(0.5f, 0.5f);
+                rootRect.anchoredPosition = Vector2.zero;
+                rootRect.offsetMin = Vector2.zero;
+                rootRect.offsetMax = Vector2.zero;
+
+                var width = rootRect.rect.width;
+                var height = rootRect.rect.height;
+                if (width < 1f || height < 1f || IsStretchRect(rootRect))
+                {
+                    width = Mathf.Min(canvasSize.x, 512);
+                    height = Mathf.Min(canvasSize.y, 512);
+                }
+
+                rootRect.sizeDelta = new Vector2(width, height);
+                return;
+            }
+
+            if (IsStretchRect(rootRect))
+            {
+                rootRect.offsetMin = Vector2.zero;
+                rootRect.offsetMax = Vector2.zero;
+                return;
+            }
+
+            rootRect.anchorMin = new Vector2(0.5f, 0.5f);
+            rootRect.anchorMax = new Vector2(0.5f, 0.5f);
+            rootRect.anchoredPosition = Vector2.zero;
+            if (rootRect.rect.width < 1f || rootRect.rect.height < 1f)
+            {
+                rootRect.sizeDelta = new Vector2(Mathf.Min(canvasSize.x, 512), Mathf.Min(canvasSize.y, 512));
+            }
+        }
+
         private static void PrepareUiForPreviewScreenSpace(GameObject root, Camera previewCamera, Vector2Int canvasSize)
         {
             if (root == null)
             {
                 return;
             }
+
+            var planeDistance = GetConfiguredPlaneDistance();
 
             var canvases = root.GetComponentsInChildren<Canvas>(true);
             if (canvases.Length == 0)
@@ -860,7 +1169,7 @@ namespace PrefabBoard.Editor.Services
             {
                 canvas.renderMode = RenderMode.ScreenSpaceCamera;
                 canvas.worldCamera = previewCamera;
-                canvas.planeDistance = 1f;
+                canvas.planeDistance = planeDistance;
                 canvas.pixelPerfect = false;
 
                 var canvasRect = canvas.GetComponent<RectTransform>();
@@ -1104,6 +1413,23 @@ namespace PrefabBoard.Editor.Services
                     tr.gameObject.layer = layer;
                 }
             }
+        }
+
+        private static float GetConfiguredPlaneDistance()
+        {
+            var settings = PreviewRigSettingsProvider.TryGetSettings();
+            if (settings == null)
+            {
+                return 1f;
+            }
+
+            return Mathf.Max(0.01f, settings.planeDistance);
+        }
+
+        private static bool ShouldForceUiLayer()
+        {
+            var settings = PreviewRigSettingsProvider.TryGetSettings();
+            return settings == null || settings.forceUiLayer;
         }
 
         private static bool IsFlatTexture(Texture2D texture)

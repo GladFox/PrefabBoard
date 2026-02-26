@@ -19,10 +19,12 @@ Editor-only инструмент `Prefab Board` на Unity UI Toolkit:
   - `BoardGroupData`
   - `BoardLibraryAsset`
   - `BoardViewSettings`
+  - `PreviewRigSettingsAsset`
 - `PrefabBoard/Assets/Editor/PrefabBoard/Services`
   - `BoardRepository`
   - `AssetGuidUtils`
   - `PreviewCache`
+  - `PreviewRigSettingsProvider`
   - `PreviewDebugCapture`
   - `GameViewResolutionUtils`
   - `BoardUndo`
@@ -98,6 +100,11 @@ Zoom-to-cursor реализован через фиксацию точки по�
 - `Resolution`: размер холста для рендера берётся из выбранного разрешения `GameView` (квантование до 32px)
 - `Control Size`: размер холста берётся из `item.size` (с fallback на размер `RectTransform`)
 
+Дополнительно `previewRenderMode` управляет компоновкой контента в preview rig:
+- `Resolution` -> fullscreen fit (контент растягивается на весь preview canvas)
+- `Control Size` -> single-control fit (контент фиксируется по размеру контрола)
+- `Auto` -> авто-режим (сохраняется прежняя логика: stretch остаётся stretch, фиксированный control центрируется)
+
 Preview кэшируется по ключу `prefabGuid + mode + canvasSize`.
 UI preview рендерится через временный rig в preview scene:
 - `Camera`
@@ -115,6 +122,15 @@ UI preview рендерится через временный rig в preview sce
   Это создаёт `PrefabBoardPreviewCamera + PrefabBoardPreviewCanvas + Content + instance prefab` с теми же настройками, что в preview pipeline.
 
 Canvas и карточки клиппируются по своим границам, чтобы контент не выходил поверх toolbar и за пределы элемента.
+
+## Preview Rig Configuration
+Источник preview rig настраивается через asset `PreviewRigSettings`:
+- меню: `Tools/PrefabBoard/Preview Rig Settings`
+- путь по умолчанию: `Assets/Editor/PrefabBoard/Settings/PreviewRigSettings.asset`
+
+Поддерживаемые источники:
+- `BuiltIn`: камера/canvas/content создаются кодом (fallback по умолчанию)
+- `PrefabTemplate`: риг берётся из prefab (камера/canvas/content резолвятся по путям в settings)
 
 ## Persistence and Undo
 Изменения данных выполняются через:

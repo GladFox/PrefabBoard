@@ -1,4 +1,5 @@
-﻿using UnityEditor;
+﻿using PrefabBoard.Editor.Data;
+using UnityEditor;
 using UnityEngine;
 
 namespace PrefabBoard.Editor.Services
@@ -37,7 +38,8 @@ namespace PrefabBoard.Editor.Services
             }
 
             var canvasSize = ResolveCanvasSize();
-            if (PreviewCache.TryCreateTestScene(prefabGuid, canvasSize, DefaultScenePath, out var error))
+            var renderMode = ResolveRenderMode(prefabGuid);
+            if (PreviewCache.TryCreateTestScene(prefabGuid, canvasSize, renderMode, DefaultScenePath, out var error))
             {
                 Debug.Log("PrefabBoard: Test scene created at " + DefaultScenePath + " for " + prefabPath + ".");
                 AssetDatabase.Refresh();
@@ -104,6 +106,17 @@ namespace PrefabBoard.Editor.Services
             var width = Mathf.Clamp(raw.x, MinCanvasSize, MaxCanvasSize);
             var height = Mathf.Clamp(raw.y, MinCanvasSize, MaxCanvasSize);
             return new Vector2Int(width, height);
+        }
+
+        private static BoardItemPreviewRenderMode ResolveRenderMode(string prefabGuid)
+        {
+            if (!string.IsNullOrEmpty(prefabGuid) &&
+                prefabGuid == PreviewDebugCapture.PrefabGuid)
+            {
+                return PreviewDebugCapture.RenderMode;
+            }
+
+            return BoardItemPreviewRenderMode.Auto;
         }
     }
 }

@@ -1,13 +1,34 @@
 ﻿# Active Context
 
 ## Текущие задачи
-1. Добавить reproducible debug-сцену `Assets/Scenes/Test.unity`, собранную из того же preview rig, что используется в `PreviewCache`.
-2. Дать быстрый entry point из меню Unity для сборки test-сцены:
-   - из последнего preview capture
-   - из выделенного prefab
-3. Зафиксировать изменения и обновить документацию/Memory Bank.
+1. Сделать preview rig конфигурируемым: не только hardcoded-кодом, но и через prefab template + settings asset.
+2. Сохранить два сценария рендера UI:
+   - fullscreen
+   - single-control
+3. Обновить документацию и зафиксировать изменения в git.
 
 ## Последние изменения (текущая сессия)
+- Добавлен `PreviewRigSettingsAsset` (`Data`) с параметрами preview rig:
+  - `rigSource` (`BuiltIn` / `PrefabTemplate`)
+  - `rigPrefab`
+  - пути `cameraPath` / `canvasPath` / `contentPath`
+  - параметры камеры/canvas (`background`, `near/far`, `planeDistance`, `forceUiLayer`)
+- Добавлен `PreviewRigSettingsProvider` (`Services`):
+  - загрузка/создание settings asset
+  - меню `Tools/PrefabBoard/Preview Rig Settings`
+- `PreviewCache` переработан:
+  - новый этап `CreatePreviewRig(...)` с выбором источника рига (prefab template или built-in fallback)
+  - общий конфиг `ConfigurePreviewCamera/Canvas/Content`
+  - `TryRenderUiPrefabPreview*` теперь получает `renderMode` и мапит его в fit mode:
+    - `Resolution -> Fullscreen`
+    - `ControlSize -> SingleControl`
+    - `Auto -> Auto`
+  - `AttachInstanceToPreviewContent` поддерживает явные fit-режимы
+  - `TryCreateTestScene` принимает `renderMode`, чтобы `Test.unity` повторял компоновку preview
+- Убрано впечатление «изменения prefab» при debug-сборке:
+  - в `TryCreateTestScene(...)` больше не вызывается `EnsureImagesHaveSprite(instance)` (fallback sprite не подставляется в сохранённой `Test.unity`).
+  - инстанс для `Test`-сцены создаётся как `Object.Instantiate(prefabAsset)` (без prefab connection).
+- Временные инстансы для preview pipeline (`ScreenSpace/WorldSpace`) тоже переключены на `Object.Instantiate(prefabAsset)` для полной изоляции от asset-связи.
 - В `PreviewCache` добавлен API для сборки test-сцены:
   - `TryCreateTestSceneFromLastCapture(...)`
   - `TryCreateTestScene(...)`

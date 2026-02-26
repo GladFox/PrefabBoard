@@ -16,17 +16,7 @@ MonoBehaviour:
   boardName: Main Board
   pan: {x: 1140.4861, y: 572.4898}
   zoom: 1.721416
-  items:
-  - id: e0d480c7453c4d799aff31da73c83851
-    prefabGuid: e3d31ff64e017b0478bc10f20bb26c68
-    position: {x: -620.3988, y: -253.54901}
-    size: {x: 220, y: 120}
-    titleOverride: 
-    note: 
-    tagColor: {r: 0, g: 0, b: 0, a: 0}
-    tags: []
-    groupId: 
-    previewRenderMode: 0
+  items: []
   groups: []
   viewSettings:
     gridEnabled: 1
