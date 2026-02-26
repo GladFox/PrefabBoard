@@ -20,6 +20,7 @@ namespace PrefabBoard.Editor.Services
         private static readonly HashSet<string> CustomPreviewKeys = new HashSet<string>();
         private static readonly HashSet<string> FailedCustomPreviewKeys = new HashSet<string>();
         private static Sprite _fallbackUiSprite;
+        private static Texture2D _fallbackUiTexture;
 
         public static Texture2D GetPreview(
             string prefabGuid,
@@ -304,7 +305,26 @@ namespace PrefabBoard.Editor.Services
             var screenSpace = TryRenderUiPrefabPreviewScreenSpace(prefabAsset, canvasSize);
             if (screenSpace != null)
             {
-                PreviewDebugCapture.SetStageTexture(PreviewDebugStage.Final, screenSpace, "Final: selected ScreenSpace");
+                if (!IsFlatTexture(screenSpace))
+                {
+                    PreviewDebugCapture.SetStageTexture(PreviewDebugStage.Final, screenSpace, "Final: selected ScreenSpace");
+                    return screenSpace;
+                }
+
+                var worldAfterFlatScreen = TryRenderUiPrefabPreviewWorldSpace(prefabAsset, canvasSize);
+                if (worldAfterFlatScreen != null && !IsFlatTexture(worldAfterFlatScreen))
+                {
+                    Object.DestroyImmediate(screenSpace);
+                    PreviewDebugCapture.SetStageTexture(PreviewDebugStage.Final, worldAfterFlatScreen, "Final: selected WorldSpace (screen looked flat)");
+                    return worldAfterFlatScreen;
+                }
+
+                if (worldAfterFlatScreen != null)
+                {
+                    Object.DestroyImmediate(worldAfterFlatScreen);
+                }
+
+                PreviewDebugCapture.SetStageTexture(PreviewDebugStage.Final, screenSpace, "Final: screen was flat, world also flat/null");
                 return screenSpace;
             }
 
@@ -355,7 +375,7 @@ namespace PrefabBoard.Editor.Services
                 var previewContent = CreatePreviewContent(previewScene, previewCanvas, out contentObject);
 
                 AttachInstanceToPreviewContent(instance, previewContent, canvasSize);
-                EnsureImagesHaveSprite(instance);
+                var fallbackImageCount = EnsureImagesHaveSprite(instance);
                 PrepareUiForPreviewScreenSpace(instance, previewCamera, canvasSize);
                 Canvas.ForceUpdateCanvases();
                 Canvas.ForceUpdateCanvases();
@@ -374,7 +394,7 @@ namespace PrefabBoard.Editor.Services
                 PreviewDebugCapture.SetStageTexture(
                     PreviewDebugStage.ScreenSpace,
                     texture,
-                    $"ScreenSpace: rendered {textureSize.x}x{textureSize.y}, canvas {canvasSize.x}x{canvasSize.y}");
+                    $"ScreenSpace: rendered {textureSize.x}x{textureSize.y}, canvas {canvasSize.x}x{canvasSize.y}, fallbackImages {fallbackImageCount}");
 
                 return texture;
             }
@@ -452,7 +472,7 @@ namespace PrefabBoard.Editor.Services
                 instance.transform.rotation = Quaternion.identity;
                 instance.transform.localScale = Vector3.one;
 
-                EnsureImagesHaveSprite(instance);
+                var fallbackImageCount = EnsureImagesHaveSprite(instance);
                 PrepareUiForPreviewWorldSpace(instance, canvasSize);
                 Canvas.ForceUpdateCanvases();
                 Canvas.ForceUpdateCanvases();
@@ -492,7 +512,7 @@ namespace PrefabBoard.Editor.Services
                 PreviewDebugCapture.SetStageTexture(
                     PreviewDebugStage.WorldSpace,
                     texture,
-                    $"WorldSpace: rendered {textureSize.x}x{textureSize.y}, bounds center {bounds.center}, size {bounds.size}");
+                    $"WorldSpace: rendered {textureSize.x}x{textureSize.y}, bounds center {bounds.center}, size {bounds.size}, fallbackImages {fallbackImageCount}");
 
                 return texture;
             }
@@ -541,7 +561,7 @@ namespace PrefabBoard.Editor.Services
 
             var camera = cameraObject.AddComponent<Camera>();
             camera.clearFlags = CameraClearFlags.SolidColor;
-            camera.backgroundColor = new Color(0.16f, 0.16f, 0.16f, 1f);
+            camera.backgroundColor = new Color(1.0f, 0.0f, 1.0f, 1f);
             camera.cullingMask = ~0;
             camera.nearClipPlane = 0.01f;
             camera.farClipPlane = 200f;
@@ -811,20 +831,21 @@ namespace PrefabBoard.Editor.Services
             camera.transform.rotation = Quaternion.LookRotation(Vector3.forward, Vector3.up);
         }
 
-        private static void EnsureImagesHaveSprite(GameObject root)
+        private static int EnsureImagesHaveSprite(GameObject root)
         {
             if (root == null)
             {
-                return;
+                return 0;
             }
 
             var fallback = GetFallbackUiSprite();
             if (fallback == null)
             {
-                return;
+                return 0;
             }
 
             var images = root.GetComponentsInChildren<Image>(true);
+            var assigned = 0;
             foreach (var image in images)
             {
                 if (image == null)
@@ -835,8 +856,11 @@ namespace PrefabBoard.Editor.Services
                 if (image.sprite == null && image.overrideSprite == null)
                 {
                     image.sprite = fallback;
+                    assigned++;
                 }
             }
+
+            return assigned;
         }
 
         private static Sprite GetFallbackUiSprite()
@@ -847,7 +871,68 @@ namespace PrefabBoard.Editor.Services
             }
 
             _fallbackUiSprite = AssetDatabase.GetBuiltinExtraResource<Sprite>("UI/Skin/UISprite.psd");
+            if (_fallbackUiSprite != null)
+            {
+                return _fallbackUiSprite;
+            }
+
+            if (_fallbackUiTexture == null)
+            {
+                _fallbackUiTexture = new Texture2D(2, 2, TextureFormat.RGBA32, false)
+                {
+                    hideFlags = HideFlags.HideAndDontSave,
+                    name = "PrefabBoard_FallbackUiTexture"
+                };
+                _fallbackUiTexture.SetPixels(new[] { Color.white, Color.white, Color.white, Color.white });
+                _fallbackUiTexture.Apply(false, false);
+            }
+
+            _fallbackUiSprite = Sprite.Create(
+                _fallbackUiTexture,
+                new Rect(0f, 0f, _fallbackUiTexture.width, _fallbackUiTexture.height),
+                new Vector2(0.5f, 0.5f),
+                100f);
+            if (_fallbackUiSprite != null)
+            {
+                _fallbackUiSprite.name = "PrefabBoard_FallbackUiSprite";
+            }
             return _fallbackUiSprite;
+        }
+
+        private static bool IsFlatTexture(Texture2D texture)
+        {
+            if (texture == null)
+            {
+                return true;
+            }
+
+            var pixels = texture.GetPixels32();
+            if (pixels == null || pixels.Length < 2)
+            {
+                return true;
+            }
+
+            var step = Mathf.Max(1, pixels.Length / 512);
+            var first = pixels[0];
+            var sampled = 0;
+            var closeToFirst = 0;
+            for (var i = 0; i < pixels.Length; i += step)
+            {
+                var p = pixels[i];
+                sampled++;
+                var delta = Mathf.Abs(p.r - first.r) + Mathf.Abs(p.g - first.g) + Mathf.Abs(p.b - first.b) + Mathf.Abs(p.a - first.a);
+                if (delta <= 6)
+                {
+                    closeToFirst++;
+                }
+            }
+
+            if (sampled == 0)
+            {
+                return true;
+            }
+
+            return closeToFirst / (float)sampled >= 0.995f;
         }
 
     }

@@ -20,6 +20,8 @@
 - Добавлено debug-окно `Tools/PrefabBoard/Preview Debug` с raw кадрами `ScreenSpace/WorldSpace/Final`.
 - Добавлен экспорт debug PNG в `Temp/PrefabBoardPreviewDebug` для разборов проблемных prefab.
 - Для preview-инстанса добавлена подстановка built-in `UISprite` в `UI.Image` без source sprite, чтобы избежать пустой прозрачной отрисовки.
+- Добавлен runtime fallback-sprite (white 2x2), если built-in `UISprite` недоступен.
+- Если screen-space рендер даёт плоский фон, автоматически пробуется world-space и выбирается неплоский кадр.
 
 ## Известные проблемы
 - Нет автоматизированного integration-теста preview в Unity Editor.

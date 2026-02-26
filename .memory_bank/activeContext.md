@@ -40,6 +40,9 @@
 - Добавлен safeguard для `UI.Image` без source sprite:
   - в preview-инстансе автоматически подставляется built-in `UISprite`,
   - это предотвращает визуально пустой кадр (серый фон) для таких элементов.
+- Усилен fallback:
+  - если `ScreenSpace` кадр получается плоским (однотонный фон), автоматически пробуем `WorldSpace` и выбираем неплоский результат.
+  - если built-in `UISprite` недоступен, создаётся runtime белый fallback-sprite для `Image`.
 
 ## Следующие шаги
 1. Снять debug-кадры проблемного prefab (`Dialog.prefab`) из `Preview Debug`.
