@@ -207,7 +207,6 @@ namespace PrefabBoard.Editor.UI
                 ve.PrimaryPointerDown += OnCardPointerDown;
                 ve.DoubleClicked += OnCardDoubleClicked;
                 ve.ExternalDragRequested += OnCardExternalDrag;
-                ve.RenderModeToggleRequested += OnCardRenderModeToggle;
                 ve.ContextMenuPopulateRequested += OnCardContextMenu;
                 _cards[item.id] = ve;
                 _itemsLayer.Add(ve);
@@ -432,6 +431,7 @@ namespace PrefabBoard.Editor.UI
             var world = ScreenToWorld(new Vector2(evt.localMousePosition.x, evt.localMousePosition.y));
             var added = new List<string>();
             var offset = 0;
+            var previewResolution = GetPreviewResolution();
 
             BoardUndo.Record(_board, "Add Prefabs");
             foreach (var obj in DragAndDrop.objectReferences)
@@ -440,6 +440,8 @@ namespace PrefabBoard.Editor.UI
                 var guid = AssetGuidUtils.GuidFromObject(obj);
                 if (string.IsNullOrEmpty(guid)) continue;
                 var item = BoardItemData.Create(guid, world + new Vector2(offset * 24f, offset * 24f));
+                item.size = PreviewCache.ResolvePreferredBoardItemSize(guid, previewResolution);
+                item.previewRenderMode = BoardItemPreviewRenderMode.Auto;
                 _board.items.Add(item);
                 added.Add(item.id);
                 offset++;
@@ -495,20 +497,6 @@ namespace PrefabBoard.Editor.UI
             DragAndDrop.PrepareStartDrag();
             DragAndDrop.objectReferences = new[] { asset };
             DragAndDrop.StartDrag(asset.name);
-        }
-
-        private void OnCardRenderModeToggle(PrefabCardElement card)
-        {
-            if (_board == null) return;
-
-            var item = FindItem(card.ItemId);
-            if (item == null) return;
-
-            BoardUndo.Record(_board, "Toggle Preview Render Mode");
-            item.previewRenderMode = NextRenderMode(item.previewRenderMode);
-            BoardUndo.MarkDirty(_board);
-            PreviewCache.Invalidate(item.prefabGuid);
-            RefreshVisualState();
         }
 
         private void OnCardContextMenu(PrefabCardElement card, ContextualMenuPopulateEvent evt)
@@ -567,6 +555,7 @@ namespace PrefabBoard.Editor.UI
             }
 
             _pendingPreview = false;
+            var sizeAutoUpdated = false;
             foreach (var group in _board.groups)
             {
                 if (group == null || !_groups.TryGetValue(group.id, out var ve)) continue;
@@ -585,21 +574,36 @@ namespace PrefabBoard.Editor.UI
             {
                 if (item == null || !_cards.TryGetValue(item.id, out var card)) continue;
 
+                if (NeedsAutoSize(item))
+                {
+                    var resolved = PreviewCache.ResolvePreferredBoardItemSize(item.prefabGuid, previewResolution);
+                    if ((item.size - resolved).sqrMagnitude > 0.01f)
+                    {
+                        item.size = resolved;
+                        sizeAutoUpdated = true;
+                    }
+                }
+
                 var pos = WorldToScreen(item.position);
                 var size = item.size * _board.zoom;
                 card.style.left = pos.x;
                 card.style.top = pos.y;
-                card.style.width = Mathf.Max(80f, size.x);
-                card.style.height = Mathf.Max(44f, size.y);
+                card.style.width = Mathf.Max(1f, size.x);
+                card.style.height = Mathf.Max(1f, size.y);
 
                 var title = ResolveTitle(item);
                 var note = string.IsNullOrWhiteSpace(item.note) ? string.Empty : TrimNote(item.note);
                 var missing = !AssetGuidUtils.TryLoadAssetByGuid<UnityEngine.Object>(item.prefabGuid, out var asset) || asset == null;
-                var preview = PreviewCache.GetPreview(item.prefabGuid, item.previewRenderMode, item.size, previewResolution, out var loading);
+                var preview = PreviewCache.GetPreview(item.prefabGuid, BoardItemPreviewRenderMode.Auto, item.size, previewResolution, out var loading);
                 if (loading) _pendingPreview = true;
 
                 var highlighted = IsMatch(item, title, query);
                 card.Bind(item, title, note, preview, missing, _selectedItems.Contains(item.id), highlighted);
+            }
+
+            if (sizeAutoUpdated)
+            {
+                BoardUndo.MarkDirty(_board);
             }
 
             MarkDirtyRepaint();
@@ -675,7 +679,7 @@ namespace PrefabBoard.Editor.UI
                     tagColor = src.tagColor,
                     tags = src.tags != null ? src.tags.ToArray() : null,
                     groupId = src.groupId,
-                    previewRenderMode = src.previewRenderMode
+                    previewRenderMode = BoardItemPreviewRenderMode.Auto
                 };
                 _board.items.Add(dupe);
                 newIds.Add(dupe.id);
@@ -815,32 +819,16 @@ namespace PrefabBoard.Editor.UI
 
         private Vector2 GetPreviewResolution()
         {
-            const float quantizeStep = 32f;
-            var width = Mathf.Max(320f, contentRect.width);
-            var height = Mathf.Max(180f, contentRect.height);
+            var width = Mathf.Max(64f, contentRect.width);
+            var height = Mathf.Max(64f, contentRect.height);
 
             if (GameViewResolutionUtils.TryGetResolution(out var gameViewResolution))
             {
-                width = Mathf.Max(320f, gameViewResolution.x);
-                height = Mathf.Max(180f, gameViewResolution.y);
+                width = Mathf.Max(64f, gameViewResolution.x);
+                height = Mathf.Max(64f, gameViewResolution.y);
             }
 
-            width = Mathf.Round(width / quantizeStep) * quantizeStep;
-            height = Mathf.Round(height / quantizeStep) * quantizeStep;
             return new Vector2(width, height);
-        }
-
-        private static BoardItemPreviewRenderMode NextRenderMode(BoardItemPreviewRenderMode mode)
-        {
-            switch (mode)
-            {
-                case BoardItemPreviewRenderMode.Resolution:
-                    return BoardItemPreviewRenderMode.ControlSize;
-                case BoardItemPreviewRenderMode.ControlSize:
-                    return BoardItemPreviewRenderMode.Auto;
-                default:
-                    return BoardItemPreviewRenderMode.Resolution;
-            }
         }
 
         private bool HasDraggedPrefabs() => DragAndDrop.objectReferences != null && DragAndDrop.objectReferences.Any(AssetGuidUtils.IsPrefabAsset);
@@ -886,6 +874,22 @@ namespace PrefabBoard.Editor.UI
         private static Rect Expand(Rect a, Rect b)
         {
             return Rect.MinMaxRect(Mathf.Min(a.xMin, b.xMin), Mathf.Min(a.yMin, b.yMin), Mathf.Max(a.xMax, b.xMax), Mathf.Max(a.yMax, b.yMax));
+        }
+
+        private static bool NeedsAutoSize(BoardItemData item)
+        {
+            if (item == null)
+            {
+                return false;
+            }
+
+            if (item.size.x <= 1f || item.size.y <= 1f)
+            {
+                return true;
+            }
+
+            return Mathf.Abs(item.size.x - 220f) <= 0.01f &&
+                   Mathf.Abs(item.size.y - 120f) <= 0.01f;
         }
 
         private static VisualElement CreateLayer(string className, bool picking)

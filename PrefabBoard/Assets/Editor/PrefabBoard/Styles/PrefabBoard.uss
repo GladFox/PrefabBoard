@@ -59,34 +59,35 @@
 
 .pb-card {
     flex-direction: column;
-    border-left-width: 1px;
-    border-right-width: 1px;
-    border-top-width: 1px;
-    border-bottom-width: 1px;
-    border-left-color: rgba(255, 255, 255, 0.16);
-    border-right-color: rgba(255, 255, 255, 0.16);
-    border-top-color: rgba(255, 255, 255, 0.16);
-    border-bottom-color: rgba(255, 255, 255, 0.16);
-    border-top-left-radius: 6px;
-    border-top-right-radius: 6px;
-    border-bottom-left-radius: 6px;
-    border-bottom-right-radius: 6px;
-    background-color: rgb(44, 49, 58);
-    padding-left: 6px;
-    padding-right: 6px;
-    padding-top: 5px;
-    padding-bottom: 5px;
+    border-left-width: 0;
+    border-right-width: 0;
+    border-top-width: 0;
+    border-bottom-width: 0;
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+    background-color: transparent;
+    padding-left: 0;
+    padding-right: 0;
+    padding-top: 0;
+    padding-bottom: 0;
     overflow: hidden;
 }
 
 .pb-card-preview {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
     flex-grow: 1;
-    min-height: 64px;
+    min-height: 0;
     height: auto;
     width: auto;
-    margin-bottom: 4px;
+    margin-bottom: 0;
     unity-background-scale-mode: scale-to-fit;
-    background-color: rgba(255, 255, 255, 0.03);
+    background-color: transparent;
     overflow: hidden;
 }
 
@@ -116,46 +117,15 @@
     background-color: rgb(232, 66, 66);
 }
 
-.pb-card-actions {
-    position: absolute;
-    right: 6px;
-    bottom: 6px;
-    flex-direction: row;
-    align-items: center;
-    gap: 4px;
-}
-
-.pb-card-render-mode {
-    width: 20px;
-    height: 18px;
-    padding-left: 0;
-    padding-right: 0;
-    padding-top: 0;
-    padding-bottom: 0;
-    font-size: 9px;
-    unity-font-style: bold;
-    color: rgb(230, 238, 245);
-    background-color: rgba(18, 21, 26, 0.72);
+.pb-card--selected {
     border-left-width: 1px;
     border-right-width: 1px;
     border-top-width: 1px;
     border-bottom-width: 1px;
-    border-left-color: rgba(255, 255, 255, 0.26);
-    border-right-color: rgba(255, 255, 255, 0.26);
-    border-top-color: rgba(255, 255, 255, 0.26);
-    border-bottom-color: rgba(255, 255, 255, 0.26);
-    border-top-left-radius: 3px;
-    border-top-right-radius: 3px;
-    border-bottom-left-radius: 3px;
-    border-bottom-right-radius: 3px;
-}
-
-.pb-card--selected {
-    border-left-color: rgb(255, 210, 62);
-    border-right-color: rgb(255, 210, 62);
-    border-top-color: rgb(255, 210, 62);
-    border-bottom-color: rgb(255, 210, 62);
-    background-color: rgb(58, 64, 75);
+    border-left-color: rgba(255, 210, 62, 0.95);
+    border-right-color: rgba(255, 210, 62, 0.95);
+    border-top-color: rgba(255, 210, 62, 0.95);
+    border-bottom-color: rgba(255, 210, 62, 0.95);
 }
 
 .pb-card--muted {

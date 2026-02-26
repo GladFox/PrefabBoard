@@ -27,6 +27,16 @@ MonoBehaviour:
     tags: []
     groupId: 
     previewRenderMode: 2
+  - id: e65fa41669ba4da186c8a66a083ac796
+    prefabGuid: a8b41dd92ad6c41489e90ad424880264
+    position: {x: -390.37335, y: -281.26935}
+    size: {x: 220, y: 120}
+    titleOverride: 
+    note: 
+    tagColor: {r: 0, g: 0, b: 0, a: 0}
+    tags: []
+    groupId: 
+    previewRenderMode: 2
   groups: []
   viewSettings:
     gridEnabled: 1

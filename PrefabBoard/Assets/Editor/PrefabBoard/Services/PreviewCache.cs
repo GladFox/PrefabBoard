@@ -200,6 +200,22 @@ namespace PrefabBoard.Editor.Services
             return TryCreateTestScene(prefabAsset, canvasSize, renderMode, scenePath, out error);
         }
 
+        public static Vector2 ResolvePreferredBoardItemSize(string prefabGuid, Vector2 editorResolution)
+        {
+            if (string.IsNullOrEmpty(prefabGuid))
+            {
+                return new Vector2(220f, 120f);
+            }
+
+            if (!AssetGuidUtils.TryLoadAssetByGuid<GameObject>(prefabGuid, out var prefabAsset) || prefabAsset == null)
+            {
+                return new Vector2(220f, 120f);
+            }
+
+            var size = ResolvePreferredItemSize(prefabAsset, editorResolution);
+            return new Vector2(size.x, size.y);
+        }
+
         private static Texture2D GetPrefabIcon()
         {
             return EditorGUIUtility.IconContent("Prefab Icon").image as Texture2D;
@@ -385,7 +401,7 @@ namespace PrefabBoard.Editor.Services
             Vector2 editorResolution)
         {
             var resolutionSize = SanitizeCanvasSize(editorResolution, new Vector2Int(DefaultResolutionWidth, DefaultResolutionHeight));
-            var controlSize = ResolveControlSize(prefabAsset, controlSizeHint, resolutionSize);
+            var controlSize = ResolveControlSize(prefabAsset, controlSizeHint);
 
             if (renderMode == BoardItemPreviewRenderMode.Resolution)
             {
@@ -415,7 +431,7 @@ namespace PrefabBoard.Editor.Services
             return PreviewContentFitMode.Auto;
         }
 
-        private static Vector2Int ResolveControlSize(GameObject prefabAsset, Vector2 controlSizeHint, Vector2Int resolutionSize)
+        private static Vector2Int ResolveControlSize(GameObject prefabAsset, Vector2 controlSizeHint)
         {
             var hinted = SanitizeCanvasSize(controlSizeHint, new Vector2Int(0, 0));
             if (hinted.x > 0 && hinted.y > 0)
@@ -423,6 +439,22 @@ namespace PrefabBoard.Editor.Services
                 return hinted;
             }
 
+            return ResolveFixedControlSize(prefabAsset);
+        }
+
+        private static Vector2Int ResolvePreferredItemSize(GameObject prefabAsset, Vector2 editorResolution)
+        {
+            var resolutionSize = SanitizeCanvasSize(editorResolution, new Vector2Int(DefaultResolutionWidth, DefaultResolutionHeight));
+            if (IsStretchToScreenPrefab(prefabAsset))
+            {
+                return resolutionSize;
+            }
+
+            return ResolveFixedControlSize(prefabAsset);
+        }
+
+        private static Vector2Int ResolveFixedControlSize(GameObject prefabAsset)
+        {
             if (TryGetPrimaryRectTransform(prefabAsset, out var rectTransform))
             {
                 var rectSize = rectTransform.rect.size;
@@ -434,10 +466,19 @@ namespace PrefabBoard.Editor.Services
                         return fromRect;
                     }
                 }
+
+                var sizeDelta = rectTransform.sizeDelta;
+                if (sizeDelta.x > 1f && sizeDelta.y > 1f)
+                {
+                    var fromDelta = SanitizeCanvasSize(sizeDelta, new Vector2Int(0, 0));
+                    if (fromDelta.x > 0 && fromDelta.y > 0)
+                    {
+                        return fromDelta;
+                    }
+                }
             }
 
-            var fallback = new Vector2Int(220, 120);
-            return fallback;
+            return new Vector2Int(220, 120);
         }
 
         private static bool IsStretchToScreenPrefab(GameObject prefabAsset)
