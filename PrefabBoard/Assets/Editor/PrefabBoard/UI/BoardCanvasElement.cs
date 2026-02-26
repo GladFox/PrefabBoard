@@ -22,6 +22,7 @@ namespace PrefabBoard.Editor.UI
         private readonly Dictionary<string, PrefabCardElement> _cards = new Dictionary<string, PrefabCardElement>();
         private readonly Dictionary<string, GroupFrameElement> _groups = new Dictionary<string, GroupFrameElement>();
         private readonly HashSet<string> _selectedItems = new HashSet<string>();
+        private readonly HashSet<string> _dirtyPreviewGuids = new HashSet<string>();
         private readonly Dictionary<string, Vector2> _dragStartItemPos = new Dictionary<string, Vector2>();
         private readonly Dictionary<string, Vector2> _dragStartGroupItemPos = new Dictionary<string, Vector2>();
 
@@ -38,6 +39,7 @@ namespace PrefabBoard.Editor.UI
         private string _draggingGroupId;
         private bool _spacePressed;
         private bool _pendingPreview;
+        private bool _previewInvalidationSubscribed;
 
         public BoardCanvasElement()
         {
@@ -67,9 +69,11 @@ namespace PrefabBoard.Editor.UI
             RegisterCallback<KeyUpEvent>(OnKeyUp);
             RegisterCallback<DragUpdatedEvent>(OnDragUpdated);
             RegisterCallback<DragPerformEvent>(OnDragPerform);
+            RegisterCallback<AttachToPanelEvent>(OnAttachToPanel);
+            RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
 
             generateVisualContent += OnGenerateVisualContent;
-            schedule.Execute(() => { if (_pendingPreview) RefreshVisualState(); }).Every(200);
+            schedule.Execute(OnScheduledRefreshTick).Every(200);
         }
 
         public bool IsGridEnabled => _board != null && _board.viewSettings != null && _board.viewSettings.gridEnabled;
@@ -78,8 +82,66 @@ namespace PrefabBoard.Editor.UI
         public void SetBoard(PrefabBoardAsset board)
         {
             _board = board;
+            _dirtyPreviewGuids.Clear();
             ClearDragState();
             RebuildFromData();
+        }
+
+        private void OnAttachToPanel(AttachToPanelEvent _)
+        {
+            if (_previewInvalidationSubscribed)
+            {
+                return;
+            }
+
+            PreviewCache.PreviewInvalidated += OnPreviewInvalidated;
+            _previewInvalidationSubscribed = true;
+        }
+
+        private void OnDetachFromPanel(DetachFromPanelEvent _)
+        {
+            if (!_previewInvalidationSubscribed)
+            {
+                return;
+            }
+
+            PreviewCache.PreviewInvalidated -= OnPreviewInvalidated;
+            _previewInvalidationSubscribed = false;
+        }
+
+        private void OnPreviewInvalidated(string prefabGuid)
+        {
+            if (_board == null || string.IsNullOrEmpty(prefabGuid))
+            {
+                return;
+            }
+
+            if (!_board.items.Any(x => x != null && x.prefabGuid == prefabGuid))
+            {
+                return;
+            }
+
+            _dirtyPreviewGuids.Add(prefabGuid);
+        }
+
+        private void OnScheduledRefreshTick()
+        {
+            if (!CanRefreshNow())
+            {
+                return;
+            }
+
+            if (_dirtyPreviewGuids.Count > 0)
+            {
+                RefreshChangedPreviews();
+                _dirtyPreviewGuids.Clear();
+                return;
+            }
+
+            if (_pendingPreview)
+            {
+                RefreshVisualState();
+            }
         }
 
         public void SetSearchQuery(string query)
@@ -609,6 +671,61 @@ namespace PrefabBoard.Editor.UI
             MarkDirtyRepaint();
         }
 
+        private void RefreshChangedPreviews()
+        {
+            if (_board == null || _dirtyPreviewGuids.Count == 0)
+            {
+                return;
+            }
+
+            var query = _search.Trim();
+            var previewResolution = GetPreviewResolution();
+            var loading = false;
+            var anyUpdated = false;
+
+            foreach (var item in _board.items)
+            {
+                if (item == null || !_dirtyPreviewGuids.Contains(item.prefabGuid))
+                {
+                    continue;
+                }
+
+                if (!_cards.TryGetValue(item.id, out var card))
+                {
+                    continue;
+                }
+
+                if (NeedsAutoSize(item))
+                {
+                    var resolved = PreviewCache.ResolvePreferredBoardItemSize(item.prefabGuid, previewResolution);
+                    if ((item.size - resolved).sqrMagnitude > 0.01f)
+                    {
+                        item.size = resolved;
+                        var size = item.size * _board.zoom;
+                        card.style.width = Mathf.Max(1f, size.x);
+                        card.style.height = Mathf.Max(1f, size.y);
+                        BoardUndo.MarkDirty(_board);
+                    }
+                }
+
+                var title = ResolveTitle(item);
+                var note = string.IsNullOrWhiteSpace(item.note) ? string.Empty : TrimNote(item.note);
+                var missing = !AssetGuidUtils.TryLoadAssetByGuid<UnityEngine.Object>(item.prefabGuid, out var asset) || asset == null;
+                var preview = PreviewCache.GetPreview(item.prefabGuid, BoardItemPreviewRenderMode.Auto, item.size, previewResolution, out var cardLoading);
+                loading |= cardLoading;
+
+                var highlighted = IsMatch(item, title, query);
+                card.Bind(item, title, note, preview, missing, _selectedItems.Contains(item.id), highlighted);
+                anyUpdated = true;
+            }
+
+            _pendingPreview = loading;
+            if (anyUpdated)
+            {
+                MarkDirtyRepaint();
+            }
+        }
+
         private void SelectItem(string id, bool additive)
         {
             if (!additive) _selectedItems.Clear();
@@ -829,6 +946,22 @@ namespace PrefabBoard.Editor.UI
             }
 
             return new Vector2(width, height);
+        }
+
+        private bool CanRefreshNow()
+        {
+            if (_board == null || panel == null)
+            {
+                return false;
+            }
+
+            if (resolvedStyle.display == DisplayStyle.None ||
+                resolvedStyle.visibility != Visibility.Visible)
+            {
+                return false;
+            }
+
+            return contentRect.width > 1f && contentRect.height > 1f;
         }
 
         private bool HasDraggedPrefabs() => DragAndDrop.objectReferences != null && DragAndDrop.objectReferences.Any(AssetGuidUtils.IsPrefabAsset);

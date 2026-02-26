@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using PrefabBoard.Editor.Data;
 using UnityEditor;
@@ -11,6 +12,8 @@ namespace PrefabBoard.Editor.Services
 {
     public static class PreviewCache
     {
+        public static event Action<string> PreviewInvalidated;
+
         private enum PreviewContentFitMode
         {
             Auto = 0,
@@ -139,6 +142,24 @@ namespace PrefabBoard.Editor.Services
                 Cache.Remove(keysToRemove[i]);
                 FailedCustomPreviewKeys.Remove(keysToRemove[i]);
             }
+
+            PreviewInvalidated?.Invoke(prefabGuid);
+        }
+
+        public static void InvalidateByAssetPath(string assetPath)
+        {
+            if (string.IsNullOrEmpty(assetPath))
+            {
+                return;
+            }
+
+            var guid = AssetDatabase.AssetPathToGUID(assetPath);
+            if (string.IsNullOrEmpty(guid))
+            {
+                return;
+            }
+
+            Invalidate(guid);
         }
 
         public static void Clear()

@@ -8,6 +8,14 @@
 3. Обновить документацию и зафиксировать изменения в git.
 
 ## Последние изменения (текущая сессия)
+- Добавлен авто-механизм обновления preview при изменении prefab:
+  - `PreviewAssetChangeWatcher` (AssetPostprocessor) отслеживает `import/move` `.prefab`;
+  - вызывает `PreviewCache.InvalidateByAssetPath(...)` только для изменённых prefab.
+- `PreviewCache` теперь публикует событие `PreviewInvalidated(prefabGuid)`.
+- `BoardCanvasElement` подписывается на invalidation-события и:
+  - ставит в очередь только затронутые `prefabGuid`;
+  - обновляет только изменённые карточки;
+  - выполняет перерисовку только когда Canvas реально видим.
 - Убрана кнопка переключения preview режима с карточки (`PrefabCardElement`), режим в UI зафиксирован в `Auto`.
 - Добавлен автоматический расчёт размера карточки по prefab при добавлении (`Project -> Canvas`):
   - fixed-size `RectTransform` -> размер карточки = размер контрола;
