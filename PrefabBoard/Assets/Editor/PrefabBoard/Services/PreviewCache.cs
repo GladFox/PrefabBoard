@@ -377,11 +377,11 @@ namespace PrefabBoard.Editor.Services
                 AttachInstanceToPreviewContent(instance, previewContent, canvasSize);
                 var fallbackImageCount = EnsureImagesHaveSprite(instance);
                 PrepareUiForPreviewScreenSpace(instance, previewCamera, canvasSize);
-                Canvas.ForceUpdateCanvases();
-                Canvas.ForceUpdateCanvases();
 
                 renderTexture = RenderTexture.GetTemporary(textureSize.x, textureSize.y, 24, RenderTextureFormat.ARGB32);
                 previewCamera.targetTexture = renderTexture;
+                Canvas.ForceUpdateCanvases();
+                Canvas.ForceUpdateCanvases();
                 previewCamera.Render();
 
                 RenderTexture.active = renderTexture;
@@ -666,8 +666,17 @@ namespace PrefabBoard.Editor.Services
             var canvases = root.GetComponentsInChildren<Canvas>(true);
             if (canvases.Length == 0)
             {
-                var createdCanvas = root.AddComponent<Canvas>();
-                createdCanvas.renderMode = RenderMode.ScreenSpaceCamera;
+                // Only inject a Canvas if the instance is not already nested inside one.
+                // If it is already inside a preview canvas, the Image components will render
+                // through that parent canvas without needing an extra nested canvas.
+                var parentCanvas = root.transform.parent != null
+                    ? root.transform.parent.GetComponentInParent<Canvas>()
+                    : null;
+                if (parentCanvas == null)
+                {
+                    var createdCanvas = root.AddComponent<Canvas>();
+                    createdCanvas.renderMode = RenderMode.ScreenSpaceCamera;
+                }
             }
 
             canvases = root.GetComponentsInChildren<Canvas>(true);
@@ -738,7 +747,11 @@ namespace PrefabBoard.Editor.Services
 
             if (IsStretchRect(canvasRect))
             {
-                return true;
+                // A stretch canvas nested inside a parent canvas inherits its size from that parent.
+                // Setting sizeDelta on a nested stretch rect would expand it beyond the parent bounds.
+                // Only apply an explicit size when this is a root canvas (no parent canvas).
+                var parent = canvasRect.transform.parent;
+                return parent == null || parent.GetComponentInParent<Canvas>() == null;
             }
 
             var rectSize = canvasRect.rect.size;

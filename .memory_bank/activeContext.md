@@ -5,7 +5,12 @@
 2. Дать пользователю инструмент сохранения debug-кадров без debugger attach.
 3. Зафиксировать update в git.
 
-## Последние изменения
+## Последние изменения (текущая сессия)
+- **Fix 1**: в `TryRenderUiPrefabPreviewScreenSpace` — `renderTexture` и `targetTexture` теперь назначаются ДО `Canvas.ForceUpdateCanvases()`. Ранее canvas считал layout при camera.pixelWidth/Height=0, что давало неверное позиционирование UI.
+- **Fix 2**: `ShouldApplyCanvasSizeHint` — stretch rect внутри parent canvas больше НЕ получает `sizeDelta = canvasSize`. Раньше это расширяло nested canvas за пределы родителя (rect = parentSize + canvasSize вместо fill).
+- **Fix 3**: `PrepareUiForPreviewScreenSpace` — Canvas больше не добавляется к instance если тот уже вложен в parent Canvas (PrefabBoardPreviewCanvas). Image компоненты рендерятся через root preview canvas напрямую.
+
+## Предыдущие изменения
 - В `BoardItemData` добавлен enum `BoardItemPreviewRenderMode` и поле `previewRenderMode` (сериализуется в ассете).
 - В `PrefabCardElement` добавлена кнопка режима preview (`A/R/C`) и callback для Canvas.
 - Action-кнопки карточки вынесены в отдельный контейнер `pb-card-actions` (правый нижний угол, с расчётом на дальнейшее расширение).
@@ -45,9 +50,9 @@
   - если built-in `UISprite` недоступен, создаётся runtime белый fallback-sprite для `Image`.
 
 ## Следующие шаги
-1. Снять debug-кадры проблемного prefab (`Dialog.prefab`) из `Preview Debug`.
-2. По кадрам проверить: culling, camera framing, clipping контента.
-3. Внести точечную правку pipeline по фактическому источнику расхождения.
+1. Открыть Unity и проверить preview `Assets/Dialog.prefab` на карточке.
+2. Если нужно — снять debug-кадры из `Tools/PrefabBoard/Preview Debug`.
+3. Проверить другие UI prefab (с собственным Canvas) — убедиться что fix3 не сломал их.
 
 ## План (REQUIREMENTS_OWNER)
 1. Реализовать выбор режима рендера прямо на карточке.

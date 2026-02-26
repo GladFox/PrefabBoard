@@ -26,8 +26,7 @@
 ## Известные проблемы
 - Нет автоматизированного integration-теста preview в Unity Editor.
 - Поведение `Auto` основано на эвристике stretch rect и может требовать тонкой подстройки для нестандартных иерархий UI.
-- Требуется ручная проверка, что проблема пустого серого рендера закрыта на целевых префабах.
-- Требуется анализ raw debug-кадров для `Assets/Dialog.prefab` (какой stage даёт серый фон).
+- Требуется ручная проверка в Unity после трёх bugfix'ов (особенно `Dialog.prefab` и prefab'ы с собственным Canvas).
 - Внешний drag в Scene/Hierarchy для MVP остаётся на `Ctrl+LMB`.
 
 ## Развитие решений
@@ -37,5 +36,5 @@
   - `git log 25eec60...HEAD` -> `aaa128f feat(editor): add canvas fallback preview for UI prefabs`.
 
 ## Контроль изменений
-- last_checked_commit: 1421696
+- last_checked_commit: 25bd6fc
 - last_checked_date: 2026-02-26
