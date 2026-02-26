@@ -98,6 +98,7 @@ Preview режим в UI зафиксирован в `Auto` (кнопка пер
 Правила авто-размера карточки и холста:
 - если у root `RectTransform` prefab задан фиксированный размер, карточка создаётся и рендерится ровно этого размера;
 - если root `RectTransform` растянут по родителю (`anchorMin=0`, `anchorMax=1`, offsets=0), карточка создаётся размером текущего canvas resolution (`GameView`).
+- если включён `PreviewRigSettings` в режиме `PrefabTemplate` и у template есть `CanvasScaler`, для stretch используется `CanvasScaler.referenceResolution` template rig.
 
 Для legacy карточек с placeholder размером `220x120` при первом рендере выполняется авто-пересчёт по тем же правилам.
 

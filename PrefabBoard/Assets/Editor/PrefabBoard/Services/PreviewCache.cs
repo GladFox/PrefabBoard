@@ -44,6 +44,9 @@ namespace PrefabBoard.Editor.Services
         private static readonly HashSet<string> CustomPreviewKeys = new HashSet<string>();
         private static readonly HashSet<string> FailedCustomPreviewKeys = new HashSet<string>();
         private const string DefaultDebugScenePath = "Assets/Scenes/Test.unity";
+        private static int _cachedResolutionSettingsId;
+        private static string _cachedResolutionPrefabGuid = string.Empty;
+        private static Vector2Int _cachedTemplateResolution = Vector2Int.zero;
 
         public static Texture2D GetPreview(
             string prefabGuid,
@@ -238,6 +241,12 @@ namespace PrefabBoard.Editor.Services
             return new Vector2(size.x, size.y);
         }
 
+        public static Vector2 ResolvePreferredResolution(Vector2 editorResolution)
+        {
+            var resolved = ResolveEffectiveResolutionSize(editorResolution);
+            return new Vector2(resolved.x, resolved.y);
+        }
+
         private static Texture2D GetPrefabIcon()
         {
             return EditorGUIUtility.IconContent("Prefab Icon").image as Texture2D;
@@ -422,7 +431,7 @@ namespace PrefabBoard.Editor.Services
             Vector2 controlSizeHint,
             Vector2 editorResolution)
         {
-            var resolutionSize = SanitizeCanvasSize(editorResolution, new Vector2Int(DefaultResolutionWidth, DefaultResolutionHeight));
+            var resolutionSize = ResolveEffectiveResolutionSize(editorResolution);
             var controlSize = ResolveControlSize(prefabAsset, controlSizeHint);
 
             if (renderMode == BoardItemPreviewRenderMode.Resolution)
@@ -466,7 +475,7 @@ namespace PrefabBoard.Editor.Services
 
         private static Vector2Int ResolvePreferredItemSize(GameObject prefabAsset, Vector2 editorResolution)
         {
-            var resolutionSize = SanitizeCanvasSize(editorResolution, new Vector2Int(DefaultResolutionWidth, DefaultResolutionHeight));
+            var resolutionSize = ResolveEffectiveResolutionSize(editorResolution);
             if (IsStretchToScreenPrefab(prefabAsset))
             {
                 return resolutionSize;
@@ -501,6 +510,99 @@ namespace PrefabBoard.Editor.Services
             }
 
             return new Vector2Int(220, 120);
+        }
+
+        private static Vector2Int ResolveEffectiveResolutionSize(Vector2 editorResolution)
+        {
+            var fallback = SanitizeCanvasSize(editorResolution, new Vector2Int(DefaultResolutionWidth, DefaultResolutionHeight));
+            if (TryGetTemplateReferenceResolution(out var templateResolution))
+            {
+                return SanitizeCanvasSize(templateResolution, fallback);
+            }
+
+            return fallback;
+        }
+
+        private static bool TryGetTemplateReferenceResolution(out Vector2Int resolution)
+        {
+            resolution = Vector2Int.zero;
+            var settings = PreviewRigSettingsProvider.TryGetSettings();
+            if (settings == null ||
+                settings.rigSource != PreviewRigSource.PrefabTemplate ||
+                settings.rigPrefab == null)
+            {
+                return false;
+            }
+
+            var settingsId = settings.GetInstanceID();
+            var prefabPath = AssetDatabase.GetAssetPath(settings.rigPrefab);
+            var prefabGuid = AssetDatabase.AssetPathToGUID(prefabPath);
+
+            if (_cachedResolutionSettingsId == settingsId &&
+                _cachedResolutionPrefabGuid == prefabGuid &&
+                _cachedTemplateResolution.x > 0 &&
+                _cachedTemplateResolution.y > 0)
+            {
+                resolution = _cachedTemplateResolution;
+                return true;
+            }
+
+            var scaler = ResolveTemplateCanvasScaler(settings.rigPrefab, settings.canvasPath);
+            if (scaler == null)
+            {
+                return false;
+            }
+
+            var refResolution = scaler.referenceResolution;
+            if (refResolution.x < MinCanvasSize || refResolution.y < MinCanvasSize)
+            {
+                return false;
+            }
+
+            _cachedResolutionSettingsId = settingsId;
+            _cachedResolutionPrefabGuid = prefabGuid;
+            _cachedTemplateResolution = new Vector2Int(
+                Mathf.RoundToInt(refResolution.x),
+                Mathf.RoundToInt(refResolution.y));
+
+            resolution = _cachedTemplateResolution;
+            return true;
+        }
+
+        private static CanvasScaler ResolveTemplateCanvasScaler(GameObject rigPrefab, string canvasPath)
+        {
+            if (rigPrefab == null)
+            {
+                return null;
+            }
+
+            var root = rigPrefab.transform;
+            if (root == null)
+            {
+                return null;
+            }
+
+            Canvas canvas = null;
+            if (!string.IsNullOrWhiteSpace(canvasPath))
+            {
+                var canvasTransform = root.Find(canvasPath);
+                if (canvasTransform != null)
+                {
+                    canvas = canvasTransform.GetComponent<Canvas>();
+                }
+            }
+
+            if (canvas == null)
+            {
+                canvas = rigPrefab.GetComponentInChildren<Canvas>(true);
+            }
+
+            if (canvas == null)
+            {
+                return null;
+            }
+
+            return canvas.GetComponent<CanvasScaler>();
         }
 
         private static bool IsStretchToScreenPrefab(GameObject prefabAsset)

@@ -951,7 +951,7 @@ namespace PrefabBoard.Editor.UI
                 height = Mathf.Max(64f, gameViewResolution.y);
             }
 
-            return new Vector2(width, height);
+            return PreviewCache.ResolvePreferredResolution(new Vector2(width, height));
         }
 
         private bool CanRefreshNow()

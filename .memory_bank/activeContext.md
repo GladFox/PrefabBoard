@@ -8,6 +8,9 @@
 3. Обновить документацию и зафиксировать изменения в git.
 
 ## Последние изменения (текущая сессия)
+- Исправлен источник resolution для stretch-элементов:
+  - если `PreviewRigSettings.rigSource = PrefabTemplate` и в rig есть `CanvasScaler`, используется `CanvasScaler.referenceResolution`;
+  - это же resolution теперь используется и для размера карточки, и для preview canvas size.
 - Исправлен рассинхрон размеров fullscreen-элементов:
   - размер карточки теперь пересчитывается по prefab-правилу на каждом refresh (не только для `220x120`);
   - для stretch root `RectTransform` размер всегда равен актуальному canvas resolution (`GameView`);
