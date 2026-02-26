@@ -16,6 +16,7 @@ namespace PrefabBoard.Editor.UI
 
         private BoardToolbarElement _toolbar;
         private BoardCanvasElement _canvas;
+        private BoardOutlineElement _outline;
 
         [MenuItem("Window/Prefab Board")]
         public static void Open()
@@ -45,10 +46,18 @@ namespace PrefabBoard.Editor.UI
 
             _toolbar = new BoardToolbarElement();
             _canvas = new BoardCanvasElement();
+            _outline = new BoardOutlineElement();
+
+            var contentRow = new VisualElement();
+            contentRow.AddToClassList("pb-content-row");
+            contentRow.style.flexGrow = 1f;
             _canvas.style.flexGrow = 1f;
+            _outline.style.flexShrink = 0f;
 
             rootVisualElement.Add(_toolbar);
-            rootVisualElement.Add(_canvas);
+            rootVisualElement.Add(contentRow);
+            contentRow.Add(_canvas);
+            contentRow.Add(_outline);
 
             _toolbar.BoardSelectionChanged += OnBoardSelectionChanged;
             _toolbar.NewBoardRequested += OnNewBoard;
@@ -60,6 +69,10 @@ namespace PrefabBoard.Editor.UI
             _toolbar.SearchChanged += value => _canvas.SetSearchQuery(value);
             _toolbar.GridToggled += value => _canvas.SetGridEnabled(value);
             _toolbar.SnapToggled += value => _canvas.SetSnapEnabled(value);
+
+            _outline.ItemFocusRequested += id => _canvas.FocusItem(id);
+            _outline.GroupFocusRequested += id => _canvas.FocusGroup(id);
+            _canvas.BoardDataChanged += () => _outline.Rebuild();
         }
 
         private void LoadData()
@@ -101,6 +114,7 @@ namespace PrefabBoard.Editor.UI
             }
 
             _canvas.SetBoard(_currentBoard);
+            _outline.SetBoard(_currentBoard);
             Repaint();
         }
 

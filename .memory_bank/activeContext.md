@@ -8,9 +8,28 @@
 3. Обеспечить совместимость drag-out fallback с `Input System` и `Legacy Input`.
 4. Расширить zoom-out диапазон доски.
 5. Убрать дедупликацию элементов при drag-out в Scene/Hierarchy.
-6. Обновить документацию и зафиксировать изменения в git.
+6. Добавить resize групп и найти/исправить причину, почему drag групп не срабатывает.
+7. Добавить горячие клавиши undo/redo (`Ctrl+Z`, `Ctrl+Y`) для отката изменений позиций.
+8. Добавить правую панель списка элементов, сгруппированных по группам, с фокусом по клику.
+9. Обновить документацию и зафиксировать изменения в git.
 
 ## Последние изменения (текущая сессия)
+- Добавлена правая панель `BoardOutlineElement`:
+  - список всех карточек на доске;
+  - группировка по `BoardGroupData`;
+  - клик по карточке вызывает фокус на item;
+  - клик по группе центрирует и фреймит группу по её `rect`.
+- В `PrefabBoardWindow` добавлен новый layout `toolbar + content row (canvas + right panel)`.
+- В `BoardCanvasElement` добавлены методы фокуса:
+  - `FocusItem(string itemId)`
+  - `FocusGroup(string groupId)`
+- В `GroupFrameElement` добавлены resize handles (8 сторон/углов) и событие `ResizePointerDown`.
+- В `BoardCanvasElement` добавлен режим `ResizeGroup` с undoable изменением `group.rect`.
+- В `BoardCanvasElement` улучшен старт drag/resize группы через `evt.currentTarget`-координаты, чтобы устранить кейс, где группа не начинала перетаскиваться.
+- В `BoardCanvasElement` добавлены горячие клавиши:
+  - `Ctrl/Cmd + Z` -> `Undo.PerformUndo()`
+  - `Ctrl/Cmd + Y` и `Ctrl/Cmd + Shift + Z` -> `Undo.PerformRedo()`
+- Canvas подписывается на `Undo.undoRedoPerformed` и полностью перестраивает визуал после undo/redo.
 - В drag-out в Scene/Hierarchy убрана проверка уникальности элементов при сборке payload:
   - удалён фильтр `dragItems.All(...)` в `TryStartExternalDragFromCurrentDrag`;
   - payload формируется напрямую из текущего набора перетаскиваемых карточек, поэтому повторяющиеся карточки одного prefab не отбрасываются.
@@ -108,24 +127,28 @@
 - Добавлены fallback'и для `Image` без sprite и world-space fallback pipeline.
 
 ## Следующие шаги
-1. В Unity проверить drag-out нескольких карточек с одинаковым prefab и убедиться, что все экземпляры создаются в Scene/Hierarchy.
-2. Проверить drag-out в `Input System`/`Legacy`/`Both`.
-3. Отдельно прогнать zoom-out smoke (`wheel` + `FrameSelection`) на больших досках.
+1. В Unity проверить drag группы за заголовок и по рамке (в т.ч. после появления карточек внутри группы).
+2. Проверить resize группы всеми handle-направлениями и минимальные размеры.
+3. Проверить `Ctrl+Z/Ctrl+Y` для move item / move group / resize group.
+4. Проверить правую панель: фокус item и frame group.
 
 ## План (REQUIREMENTS_OWNER)
-1. Найти и убрать проверку уникальности в сборке drag-out payload.
-2. Сохранить текущий UX drag-out (триггеры/режимы) без дополнительных изменений.
-3. Обновить Memory Bank, зафиксировать и отправить изменения.
+1. Внести resize handles в `GroupFrameElement` и режим resize в `BoardCanvasElement`.
+2. Добавить keyboard undo/redo и подписку на `Undo.undoRedoPerformed`.
+3. Добавить правую панель outline и связать её с API фокуса Canvas.
+4. Синхронизировать README/Memory Bank и закоммитить.
 
 ## Стратегия (ARCHITECT)
-- Изменить только сбор payload для внешнего drag без изменения механики старта drag.
-- Оперировать карточками (BoardItemData), не вводить фильтрацию по prefabGuid.
+- Не менять модель данных; реализовать фичи на уровне UI-событий и существующих `BoardGroupData/BoardItemData`.
+- Для undo/redo использовать нативный Unity Undo pipeline без собственного стека операций.
+- Для правой панели использовать однонаправленный поток: `Canvas -> событие BoardDataChanged -> Outline.Rebuild()`.
 
 ## REVIEWER checklist
-- В drag-out payload нет дедупликации карточек.
-- Повторяющиеся prefab карточки не отбрасываются на этапе сборки payload.
+- Группы двигаются и ресайзятся; `group.rect` обновляется корректно.
+- Undo/redo работает для изменения позиций/размеров после drag операций.
+- Правая панель отображает все items по группам и корректно фокусирует canvas.
 - Документация и Memory Bank синхронизированы.
 
 ## QA_TESTER заметки
 - Автоматический Unity compile/smoke в этой среде не запускался.
-- Нужна ручная проверка в Unity Editor (multi-drag одинаковых prefab в Scene/Hierarchy).
+- Нужна ручная проверка в Unity Editor (group drag/resize + undo/redo + outline focus).

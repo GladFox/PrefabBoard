@@ -18,6 +18,12 @@
     overflow: hidden;
 }
 
+.pb-content-row {
+    flex-direction: row;
+    flex-grow: 1;
+    min-height: 0;
+}
+
 .pb-layer-groups,
 .pb-layer-items,
 .pb-layer-overlay {
@@ -48,6 +54,67 @@
     color: rgb(223, 237, 255);
     unity-font-style: bold;
     background-color: rgba(73, 176, 255, 0.25);
+}
+
+.pb-group-resize-handle {
+    position: absolute;
+    background-color: rgba(255, 255, 255, 0.45);
+}
+
+.pb-group-resize-handle--left {
+    left: -4px;
+    top: 10px;
+    bottom: 10px;
+    width: 8px;
+}
+
+.pb-group-resize-handle--right {
+    right: -4px;
+    top: 10px;
+    bottom: 10px;
+    width: 8px;
+}
+
+.pb-group-resize-handle--top {
+    left: 10px;
+    right: 10px;
+    top: -4px;
+    height: 8px;
+}
+
+.pb-group-resize-handle--bottom {
+    left: 10px;
+    right: 10px;
+    bottom: -4px;
+    height: 8px;
+}
+
+.pb-group-resize-handle--top-left {
+    left: -4px;
+    top: -4px;
+    width: 10px;
+    height: 10px;
+}
+
+.pb-group-resize-handle--top-right {
+    right: -4px;
+    top: -4px;
+    width: 10px;
+    height: 10px;
+}
+
+.pb-group-resize-handle--bottom-left {
+    left: -4px;
+    bottom: -4px;
+    width: 10px;
+    height: 10px;
+}
+
+.pb-group-resize-handle--bottom-right {
+    right: -4px;
+    bottom: -4px;
+    width: 10px;
+    height: 10px;
 }
 
 .pb-group--selected {
@@ -160,4 +227,56 @@
     border-top-right-radius: 5px;
     border-bottom-left-radius: 5px;
     border-bottom-right-radius: 5px;
+}
+
+.pb-outline {
+    width: 280px;
+    min-width: 240px;
+    border-left-width: 1px;
+    border-left-color: rgba(255, 255, 255, 0.12);
+    background-color: rgb(31, 35, 42);
+}
+
+.pb-outline-title {
+    padding-left: 10px;
+    padding-top: 8px;
+    padding-bottom: 8px;
+    color: rgb(225, 233, 245);
+    unity-font-style: bold;
+}
+
+.pb-outline-scroll {
+    flex-grow: 1;
+    padding-left: 8px;
+    padding-right: 8px;
+    padding-bottom: 8px;
+}
+
+.pb-outline-group {
+    margin-top: 4px;
+    unity-text-align: middle-left;
+}
+
+.pb-outline-item {
+    margin-top: 2px;
+    unity-text-align: middle-left;
+}
+
+.pb-outline-item--grouped {
+    margin-left: 12px;
+}
+
+.pb-outline-ungrouped {
+    margin-top: 8px;
+    color: rgba(221, 229, 240, 0.95);
+    unity-font-style: bold;
+}
+
+.pb-outline-info {
+    margin-top: 6px;
+    color: rgba(211, 211, 211, 0.8);
+}
+
+.pb-outline-empty {
+    margin-left: 12px;
 }
