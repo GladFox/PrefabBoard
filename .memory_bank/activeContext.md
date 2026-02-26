@@ -8,6 +8,10 @@
 3. Обновить документацию и зафиксировать изменения в git.
 
 ## Последние изменения (текущая сессия)
+- Исправлен рассинхрон размеров fullscreen-элементов:
+  - размер карточки теперь пересчитывается по prefab-правилу на каждом refresh (не только для `220x120`);
+  - для stretch root `RectTransform` размер всегда равен актуальному canvas resolution (`GameView`);
+  - при изменении resolution выполняется автоматический refresh размеров.
 - Добавлен авто-механизм обновления preview при изменении prefab:
   - `PreviewAssetChangeWatcher` (AssetPostprocessor) отслеживает `import/move` `.prefab`;
   - вызывает `PreviewCache.InvalidateByAssetPath(...)` только для изменённых prefab.

@@ -40,6 +40,7 @@ namespace PrefabBoard.Editor.UI
         private bool _spacePressed;
         private bool _pendingPreview;
         private bool _previewInvalidationSubscribed;
+        private Vector2 _lastPreviewResolution;
 
         public BoardCanvasElement()
         {
@@ -83,6 +84,7 @@ namespace PrefabBoard.Editor.UI
         {
             _board = board;
             _dirtyPreviewGuids.Clear();
+            _lastPreviewResolution = Vector2.zero;
             ClearDragState();
             RebuildFromData();
         }
@@ -128,6 +130,14 @@ namespace PrefabBoard.Editor.UI
         {
             if (!CanRefreshNow())
             {
+                return;
+            }
+
+            var currentResolution = GetPreviewResolution();
+            if (_lastPreviewResolution.x > 0f &&
+                (_lastPreviewResolution - currentResolution).sqrMagnitude > 0.25f)
+            {
+                RefreshVisualState();
                 return;
             }
 
@@ -632,18 +642,16 @@ namespace PrefabBoard.Editor.UI
 
             var query = _search.Trim();
             var previewResolution = GetPreviewResolution();
+            _lastPreviewResolution = previewResolution;
             foreach (var item in _board.items)
             {
                 if (item == null || !_cards.TryGetValue(item.id, out var card)) continue;
 
-                if (NeedsAutoSize(item))
+                var resolved = PreviewCache.ResolvePreferredBoardItemSize(item.prefabGuid, previewResolution);
+                if ((item.size - resolved).sqrMagnitude > 0.01f)
                 {
-                    var resolved = PreviewCache.ResolvePreferredBoardItemSize(item.prefabGuid, previewResolution);
-                    if ((item.size - resolved).sqrMagnitude > 0.01f)
-                    {
-                        item.size = resolved;
-                        sizeAutoUpdated = true;
-                    }
+                    item.size = resolved;
+                    sizeAutoUpdated = true;
                 }
 
                 var pos = WorldToScreen(item.position);
@@ -680,6 +688,7 @@ namespace PrefabBoard.Editor.UI
 
             var query = _search.Trim();
             var previewResolution = GetPreviewResolution();
+            _lastPreviewResolution = previewResolution;
             var loading = false;
             var anyUpdated = false;
 
@@ -695,17 +704,14 @@ namespace PrefabBoard.Editor.UI
                     continue;
                 }
 
-                if (NeedsAutoSize(item))
+                var resolved = PreviewCache.ResolvePreferredBoardItemSize(item.prefabGuid, previewResolution);
+                if ((item.size - resolved).sqrMagnitude > 0.01f)
                 {
-                    var resolved = PreviewCache.ResolvePreferredBoardItemSize(item.prefabGuid, previewResolution);
-                    if ((item.size - resolved).sqrMagnitude > 0.01f)
-                    {
-                        item.size = resolved;
-                        var size = item.size * _board.zoom;
-                        card.style.width = Mathf.Max(1f, size.x);
-                        card.style.height = Mathf.Max(1f, size.y);
-                        BoardUndo.MarkDirty(_board);
-                    }
+                    item.size = resolved;
+                    var size = item.size * _board.zoom;
+                    card.style.width = Mathf.Max(1f, size.x);
+                    card.style.height = Mathf.Max(1f, size.y);
+                    BoardUndo.MarkDirty(_board);
                 }
 
                 var title = ResolveTitle(item);
@@ -1007,22 +1013,6 @@ namespace PrefabBoard.Editor.UI
         private static Rect Expand(Rect a, Rect b)
         {
             return Rect.MinMaxRect(Mathf.Min(a.xMin, b.xMin), Mathf.Min(a.yMin, b.yMin), Mathf.Max(a.xMax, b.xMax), Mathf.Max(a.yMax, b.yMax));
-        }
-
-        private static bool NeedsAutoSize(BoardItemData item)
-        {
-            if (item == null)
-            {
-                return false;
-            }
-
-            if (item.size.x <= 1f || item.size.y <= 1f)
-            {
-                return true;
-            }
-
-            return Mathf.Abs(item.size.x - 220f) <= 0.01f &&
-                   Mathf.Abs(item.size.y - 120f) <= 0.01f;
         }
 
         private static VisualElement CreateLayer(string className, bool picking)
