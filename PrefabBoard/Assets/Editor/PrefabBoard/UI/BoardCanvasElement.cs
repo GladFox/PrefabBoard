@@ -290,7 +290,13 @@ namespace PrefabBoard.Editor.UI
             RefreshVisualState();
         }
 
-        private float MinZoom => _board?.viewSettings != null ? Mathf.Max(0.05f, _board.viewSettings.minZoom) : 0.2f;
+        private const float DefaultMinZoom = 0.02f;
+        private const float AbsoluteMinZoom = 0.005f;
+
+        private float MinZoom =>
+            _board?.viewSettings != null
+                ? Mathf.Max(AbsoluteMinZoom, Mathf.Min(_board.viewSettings.minZoom, DefaultMinZoom))
+                : DefaultMinZoom;
         private float MaxZoom => _board?.viewSettings != null ? Mathf.Max(MinZoom, _board.viewSettings.maxZoom) : 2f;
 
         private void OnGenerateVisualContent(MeshGenerationContext mgc)

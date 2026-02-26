@@ -45,21 +45,26 @@
   - `Input System` (`Mouse.current.leftButton.isPressed`)
   - `Legacy Input` (`Input.GetMouseButton(0)`)
   - выбор ветки через compile-guards `ENABLE_INPUT_SYSTEM` / `ENABLE_LEGACY_INPUT_MANAGER`.
+- Расширен zoom-out диапазон доски:
+  - дефолт `BoardViewSettings.minZoom` снижен с `0.2` до `0.02`;
+  - runtime `MinZoom` в `BoardCanvasElement` ограничивается значением не выше `0.02`,
+    поэтому старые доски с сохранённым `0.2` тоже могут отъезжать дальше.
 
 ## Известные проблемы
 - В проблемном кейсе пользователя preview всё ещё может показывать пустой/серый результат; причина пока не подтверждена.
 - Нет автоматизированного integration-теста preview в Unity Editor.
 - Поведение auto-size основано на root `RectTransform`; для сложных префабов, где целевой UI-контрол не является root, может потребоваться дополнительное правило выбора таргет-контрола.
 - Для drag-out fallback нужна ручная проверка в конфигурациях `Input System`/`Legacy`/`Both` (автотестов нет).
+- Новые пределы зума требуют ручной UX-проверки на очень больших канвасах (читабельность сетки/карточек на экстремальном отдалении).
 - Режим `PrefabTemplate` требует корректно размеченный rig prefab (camera/canvas/content), иначе используется built-in fallback.
 
 ## Развитие решений
 - Preview система стала параметризованной (режим + canvas size) и воспроизводимой через test scene builder.
 - Конфиг камеры/canvas для debug-сцены теперь берётся из того же `PreviewCache`, что уменьшает расхождение между runtime preview и ручной диагностикой.
 - Проверка изменений после `last_checked_commit` выполнена:
-  - `git log 6d7533e...HEAD`
-  - найдено: `0fa631b`.
+  - `git log 0fa631b...HEAD`
+  - найдено: `00b2557`.
 
 ## Контроль изменений
-- last_checked_commit: 0fa631b
+- last_checked_commit: 00b2557
 - last_checked_date: 2026-02-26

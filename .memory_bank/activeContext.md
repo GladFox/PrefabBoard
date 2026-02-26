@@ -6,9 +6,13 @@
    - fullscreen
    - single-control
 3. Обеспечить совместимость drag-out fallback с `Input System` и `Legacy Input`.
-4. Обновить документацию и зафиксировать изменения в git.
+4. Расширить zoom-out диапазон доски.
+5. Обновить документацию и зафиксировать изменения в git.
 
 ## Последние изменения (текущая сессия)
+- Расширен zoom-out диапазон доски:
+  - новый дефолт `BoardViewSettings.minZoom = 0.02` для новых досок;
+  - в `BoardCanvasElement` минимум зума ограничен сверху значением `0.02`, чтобы старые доски с legacy `minZoom=0.2` тоже могли отъезжать дальше без ручной миграции.
 - Исправлено падение при `Active Input Handling = Input System Package`:
   - в `BoardCanvasElement` убран прямой вызов `Input.GetMouseButton(0)` из scheduler fallback;
   - добавлен общий helper `IsPrimaryMouseButtonPressed()` с compile-guards:
@@ -100,24 +104,24 @@
 - Добавлены fallback'и для `Image` без sprite и world-space fallback pipeline.
 
 ## Следующие шаги
-1. В Unity проверить drag-out карточки в `Scene/Hierarchy` в трёх режимах `Active Input Handling`: `Input System`, `Legacy`, `Both`.
-2. Подтвердить отсутствие `InvalidOperationException` из `UnityEngine.Input`.
-3. При необходимости добавить editor-тест/diagnostic toggle для контроля backend-ветки ввода.
+1. В Unity проверить новый zoom-out: wheel zoom до минимума и `FrameSelection()` на больших досках.
+2. Подтвердить, что старые board assets (с `minZoom=0.2`) теперь тоже уходят до нового минимума.
+3. После smoke-проверки вернуться к ручной валидации drag-out в `Input System`/`Legacy`/`Both`.
 
 ## План (REQUIREMENTS_OWNER)
-1. Локализовать место вызова Legacy Input API в drag-out fallback.
-2. Заменить проверку нажатия ЛКМ на backend-agnostic helper с preprocessor guards.
-3. Проверить код на прямые вызовы `UnityEngine.Input` без guard и зафиксировать изменения.
+1. Найти текущие clamp-ограничения зума в `BoardCanvasElement` и дефолты в `BoardViewSettings`.
+2. Снизить minimum zoom для новых и существующих досок без миграции assets.
+3. Обновить Memory Bank, зафиксировать и отправить изменения.
 
 ## Стратегия (ARCHITECT)
-- Не вносить runtime-зависимость от `Input System` пакета, использовать только условную компиляцию.
-- Сохранить существующий UX drag-out без изменения контрактов `BoardCanvasElement`.
+- Изменить только zoom-конфиг и clamp-логику без затрагивания pan/drag/grid pipeline.
+- Для обратной совместимости применить runtime-cap минимума, чтобы legacy boards получили новый диапазон автоматически.
 
 ## REVIEWER checklist
-- Нет прямых вызовов `Input.GetMouseButton` в коде, исполняемом при `Input System only`.
-- Код компилируется при отсутствии `Input System` package (ветка обёрнута в `#if ENABLE_INPUT_SYSTEM`).
+- Новый минимум зума применяется к старым и новым доскам.
+- `FrameSelection` и колесо используют обновлённые лимиты `MinZoom/MaxZoom`.
 - Документация и Memory Bank синхронизированы.
 
 ## QA_TESTER заметки
 - Автоматический Unity compile/smoke в этой среде не запускался.
-- Нужна ручная проверка в Unity Editor (`Input System`/`Legacy`/`Both` + drag-out smoke).
+- Нужна ручная проверка в Unity Editor (zoom-out range + `FrameSelection` smoke).

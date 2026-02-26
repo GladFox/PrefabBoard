@@ -9,7 +9,7 @@ namespace PrefabBoard.Editor.Data
         public bool gridEnabled = true;
         public bool snapEnabled;
         public float gridStep = 64f;
-        public float minZoom = 0.2f;
+        public float minZoom = 0.02f;
         public float maxZoom = 2f;
     }
 }
