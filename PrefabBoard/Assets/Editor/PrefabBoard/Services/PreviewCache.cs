@@ -372,7 +372,7 @@ namespace PrefabBoard.Editor.Services
                 PreviewDebugCapture.SetStageTexture(
                     PreviewDebugStage.ScreenSpace,
                     texture,
-                    $"ScreenSpace: rendered {textureSize.x}x{textureSize.y}, canvas {canvasSize.x}x{canvasSize.y}, plane {previewCamera.planeDistance:0.###}");
+                    $"ScreenSpace: rendered {textureSize.x}x{textureSize.y}, canvas {canvasSize.x}x{canvasSize.y}");
 
                 return texture;
             }
