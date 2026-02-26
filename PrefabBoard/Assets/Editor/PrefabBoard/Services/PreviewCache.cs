@@ -19,6 +19,7 @@ namespace PrefabBoard.Editor.Services
         private static readonly Dictionary<string, Texture2D> Cache = new Dictionary<string, Texture2D>();
         private static readonly HashSet<string> CustomPreviewKeys = new HashSet<string>();
         private static readonly HashSet<string> FailedCustomPreviewKeys = new HashSet<string>();
+        private static Sprite _fallbackUiSprite;
 
         public static Texture2D GetPreview(
             string prefabGuid,
@@ -354,6 +355,7 @@ namespace PrefabBoard.Editor.Services
                 var previewContent = CreatePreviewContent(previewScene, previewCanvas, out contentObject);
 
                 AttachInstanceToPreviewContent(instance, previewContent, canvasSize);
+                EnsureImagesHaveSprite(instance);
                 PrepareUiForPreviewScreenSpace(instance, previewCamera, canvasSize);
                 Canvas.ForceUpdateCanvases();
                 Canvas.ForceUpdateCanvases();
@@ -450,6 +452,7 @@ namespace PrefabBoard.Editor.Services
                 instance.transform.rotation = Quaternion.identity;
                 instance.transform.localScale = Vector3.one;
 
+                EnsureImagesHaveSprite(instance);
                 PrepareUiForPreviewWorldSpace(instance, canvasSize);
                 Canvas.ForceUpdateCanvases();
                 Canvas.ForceUpdateCanvases();
@@ -806,6 +809,45 @@ namespace PrefabBoard.Editor.Services
             camera.orthographicSize = size;
             camera.transform.position = center + Vector3.back * 10f;
             camera.transform.rotation = Quaternion.LookRotation(Vector3.forward, Vector3.up);
+        }
+
+        private static void EnsureImagesHaveSprite(GameObject root)
+        {
+            if (root == null)
+            {
+                return;
+            }
+
+            var fallback = GetFallbackUiSprite();
+            if (fallback == null)
+            {
+                return;
+            }
+
+            var images = root.GetComponentsInChildren<Image>(true);
+            foreach (var image in images)
+            {
+                if (image == null)
+                {
+                    continue;
+                }
+
+                if (image.sprite == null && image.overrideSprite == null)
+                {
+                    image.sprite = fallback;
+                }
+            }
+        }
+
+        private static Sprite GetFallbackUiSprite()
+        {
+            if (_fallbackUiSprite != null)
+            {
+                return _fallbackUiSprite;
+            }
+
+            _fallbackUiSprite = AssetDatabase.GetBuiltinExtraResource<Sprite>("UI/Skin/UISprite.psd");
+            return _fallbackUiSprite;
         }
 
     }

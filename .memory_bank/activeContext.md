@@ -37,6 +37,9 @@
   - `PreviewDebugCapture` хранит последние кадры стадий `ScreenSpace`, `WorldSpace`, `Final`.
   - `PreviewCache` пишет кадры и notes по каждой стадии, включая fallback-ветки и ошибки.
   - `PreviewDebugWindow` (`Tools/PrefabBoard/Preview Debug`) показывает raw текстуры и метаданные.
+- Добавлен safeguard для `UI.Image` без source sprite:
+  - в preview-инстансе автоматически подставляется built-in `UISprite`,
+  - это предотвращает визуально пустой кадр (серый фон) для таких элементов.
 
 ## Следующие шаги
 1. Снять debug-кадры проблемного prefab (`Dialog.prefab`) из `Preview Debug`.

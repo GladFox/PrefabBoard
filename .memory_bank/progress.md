@@ -19,6 +19,7 @@
 - Добавлен клиппинг canvas/card, чтобы визуал не выходил за границы окна и карточек.
 - Добавлено debug-окно `Tools/PrefabBoard/Preview Debug` с raw кадрами `ScreenSpace/WorldSpace/Final`.
 - Добавлен экспорт debug PNG в `Temp/PrefabBoardPreviewDebug` для разборов проблемных prefab.
+- Для preview-инстанса добавлена подстановка built-in `UISprite` в `UI.Image` без source sprite, чтобы избежать пустой прозрачной отрисовки.
 
 ## Известные проблемы
 - Нет автоматизированного integration-теста preview в Unity Editor.
