@@ -301,6 +301,34 @@ namespace PrefabBoard.Editor.Services
 
         private static Texture2D TryRenderUiPrefabPreview(GameObject prefabAsset, Vector2Int canvasSize)
         {
+            var screenSpace = TryRenderUiPrefabPreviewScreenSpace(prefabAsset, canvasSize);
+            if (screenSpace != null && !IsLikelyBlankPreview(screenSpace))
+            {
+                return screenSpace;
+            }
+
+            if (screenSpace != null)
+            {
+                Object.DestroyImmediate(screenSpace);
+            }
+
+            var worldSpace = TryRenderUiPrefabPreviewWorldSpace(prefabAsset, canvasSize);
+            if (worldSpace != null && !IsLikelyBlankPreview(worldSpace))
+            {
+                return worldSpace;
+            }
+
+            if (worldSpace != null)
+            {
+                Object.DestroyImmediate(worldSpace);
+            }
+
+            Debug.LogWarning("PrefabBoard: UI preview render produced an empty frame for " + AssetDatabase.GetAssetPath(prefabAsset));
+            return null;
+        }
+
+        private static Texture2D TryRenderUiPrefabPreviewScreenSpace(GameObject prefabAsset, Vector2Int canvasSize)
+        {
             Scene previewScene = default;
             var sceneCreated = false;
 
@@ -334,7 +362,7 @@ namespace PrefabBoard.Editor.Services
                 var previewContent = CreatePreviewContent(previewScene, previewCanvas, out contentObject);
 
                 AttachInstanceToPreviewContent(instance, previewContent, canvasSize);
-                PrepareUiForPreview(instance, previewCamera, canvasSize);
+                PrepareUiForPreviewScreenSpace(instance, previewCamera, canvasSize);
                 Canvas.ForceUpdateCanvases();
                 Canvas.ForceUpdateCanvases();
 
@@ -357,13 +385,126 @@ namespace PrefabBoard.Editor.Services
 
                 return texture;
             }
-            catch
+            catch (System.Exception ex)
             {
                 if (texture != null)
                 {
                     Object.DestroyImmediate(texture);
                 }
 
+                Debug.LogWarning("PrefabBoard: ScreenSpace preview failed for " + AssetDatabase.GetAssetPath(prefabAsset) + "\n" + ex.Message);
+                return null;
+            }
+            finally
+            {
+                RenderTexture.active = previousActive;
+
+                if (renderTexture != null)
+                {
+                    RenderTexture.ReleaseTemporary(renderTexture);
+                }
+
+                if (contentObject != null)
+                {
+                    Object.DestroyImmediate(contentObject);
+                }
+
+                if (canvasObject != null)
+                {
+                    Object.DestroyImmediate(canvasObject);
+                }
+
+                if (cameraObject != null)
+                {
+                    Object.DestroyImmediate(cameraObject);
+                }
+
+                if (instance != null)
+                {
+                    Object.DestroyImmediate(instance);
+                }
+
+                if (sceneCreated)
+                {
+                    EditorSceneManager.ClosePreviewScene(previewScene);
+                }
+            }
+        }
+
+        private static Texture2D TryRenderUiPrefabPreviewWorldSpace(GameObject prefabAsset, Vector2Int canvasSize)
+        {
+            Scene previewScene = default;
+            var sceneCreated = false;
+
+            GameObject instance = null;
+            GameObject cameraObject = null;
+            RenderTexture renderTexture = null;
+            Texture2D texture = null;
+            var previousActive = RenderTexture.active;
+
+            try
+            {
+                previewScene = EditorSceneManager.NewPreviewScene();
+                sceneCreated = true;
+
+                instance = PrefabUtility.InstantiatePrefab(prefabAsset, previewScene) as GameObject;
+                if (instance == null)
+                {
+                    return null;
+                }
+
+                instance.hideFlags = HideFlags.HideAndDontSave;
+                instance.transform.position = Vector3.zero;
+                instance.transform.rotation = Quaternion.identity;
+                instance.transform.localScale = Vector3.one;
+
+                PrepareUiForPreviewWorldSpace(instance, canvasSize);
+                Canvas.ForceUpdateCanvases();
+                Canvas.ForceUpdateCanvases();
+
+                if (!TryCalculateWorldBounds(instance, out var bounds))
+                {
+                    return null;
+                }
+
+                var textureSize = ComputeTextureSize(canvasSize);
+                var aspect = Mathf.Max(0.01f, textureSize.x / (float)textureSize.y);
+
+                cameraObject = new GameObject("PrefabBoardPreviewCamera");
+                cameraObject.hideFlags = HideFlags.HideAndDontSave;
+                SceneManager.MoveGameObjectToScene(cameraObject, previewScene);
+
+                var camera = cameraObject.AddComponent<Camera>();
+                camera.clearFlags = CameraClearFlags.SolidColor;
+                camera.backgroundColor = new Color(0.16f, 0.16f, 0.16f, 1f);
+                camera.orthographic = true;
+                camera.nearClipPlane = 0.01f;
+                camera.farClipPlane = 1000f;
+
+                PositionPreviewCamera(camera, bounds, aspect);
+
+                renderTexture = RenderTexture.GetTemporary(textureSize.x, textureSize.y, 24, RenderTextureFormat.ARGB32);
+                camera.targetTexture = renderTexture;
+                camera.Render();
+
+                RenderTexture.active = renderTexture;
+                texture = new Texture2D(textureSize.x, textureSize.y, TextureFormat.RGBA32, false)
+                {
+                    hideFlags = HideFlags.HideAndDontSave
+                };
+                texture.ReadPixels(new Rect(0f, 0f, textureSize.x, textureSize.y), 0, 0);
+                texture.Apply(false, false);
+
+                return texture;
+            }
+            catch (System.Exception ex)
+            {
+                if (texture != null)
+                {
+                    Object.DestroyImmediate(texture);
+                }
+
+                Debug.LogWarning("PrefabBoard: WorldSpace preview failed for " + AssetDatabase.GetAssetPath(prefabAsset) + "\n" + ex.Message);
                 return null;
             }
             finally
@@ -378,16 +519,6 @@ namespace PrefabBoard.Editor.Services
                 if (cameraObject != null)
                 {
                     Object.DestroyImmediate(cameraObject);
-                }
-
-                if (contentObject != null)
-                {
-                    Object.DestroyImmediate(contentObject);
-                }
-
-                if (canvasObject != null)
-                {
-                    Object.DestroyImmediate(canvasObject);
                 }
 
                 if (instance != null)
@@ -429,10 +560,10 @@ namespace PrefabBoard.Editor.Services
             SceneManager.MoveGameObjectToScene(canvasObject, previewScene);
 
             var canvasRect = canvasObject.GetComponent<RectTransform>();
-            canvasRect.anchorMin = Vector2.zero;
-            canvasRect.anchorMax = Vector2.one;
+            canvasRect.anchorMin = new Vector2(0.5f, 0.5f);
+            canvasRect.anchorMax = new Vector2(0.5f, 0.5f);
             canvasRect.pivot = new Vector2(0.5f, 0.5f);
-            canvasRect.sizeDelta = Vector2.zero;
+            canvasRect.sizeDelta = new Vector2(canvasSize.x, canvasSize.y);
             canvasRect.anchoredPosition = Vector2.zero;
 
             var canvas = canvasObject.GetComponent<Canvas>();
@@ -505,7 +636,7 @@ namespace PrefabBoard.Editor.Services
             instance.transform.localScale = Vector3.one;
         }
 
-        private static void PrepareUiForPreview(GameObject root, Camera previewCamera, Vector2Int canvasSize)
+        private static void PrepareUiForPreviewScreenSpace(GameObject root, Camera previewCamera, Vector2Int canvasSize)
         {
             if (root == null)
             {
@@ -525,6 +656,42 @@ namespace PrefabBoard.Editor.Services
                 canvas.renderMode = RenderMode.ScreenSpaceCamera;
                 canvas.worldCamera = previewCamera;
                 canvas.planeDistance = 1f;
+                canvas.pixelPerfect = false;
+
+                var canvasRect = canvas.GetComponent<RectTransform>();
+                if (canvasRect != null && ShouldApplyCanvasSizeHint(canvasRect))
+                {
+                    canvasRect.sizeDelta = new Vector2(canvasSize.x, canvasSize.y);
+                }
+            }
+
+            var scalers = root.GetComponentsInChildren<CanvasScaler>(true);
+            foreach (var scaler in scalers)
+            {
+                scaler.uiScaleMode = CanvasScaler.ScaleMode.ConstantPixelSize;
+                scaler.scaleFactor = 1f;
+            }
+        }
+
+        private static void PrepareUiForPreviewWorldSpace(GameObject root, Vector2Int canvasSize)
+        {
+            if (root == null)
+            {
+                return;
+            }
+
+            var canvases = root.GetComponentsInChildren<Canvas>(true);
+            if (canvases.Length == 0)
+            {
+                var createdCanvas = root.AddComponent<Canvas>();
+                createdCanvas.renderMode = RenderMode.WorldSpace;
+            }
+
+            canvases = root.GetComponentsInChildren<Canvas>(true);
+            foreach (var canvas in canvases)
+            {
+                canvas.renderMode = RenderMode.WorldSpace;
+                canvas.worldCamera = null;
                 canvas.pixelPerfect = false;
 
                 var canvasRect = canvas.GetComponent<RectTransform>();
@@ -590,5 +757,117 @@ namespace PrefabBoard.Editor.Services
             return new Vector2Int(scaledWidth, scaledHeight);
         }
 
+        private static bool TryCalculateWorldBounds(GameObject root, out Bounds bounds)
+        {
+            bounds = new Bounds(Vector3.zero, Vector3.zero);
+            var hasAny = false;
+
+            var renderers = root.GetComponentsInChildren<Renderer>(true);
+            foreach (var renderer in renderers)
+            {
+                if (!hasAny)
+                {
+                    bounds = renderer.bounds;
+                    hasAny = true;
+                }
+                else
+                {
+                    bounds.Encapsulate(renderer.bounds);
+                }
+            }
+
+            var rectTransforms = root.GetComponentsInChildren<RectTransform>(true);
+            foreach (var rectTransform in rectTransforms)
+            {
+                var corners = new Vector3[4];
+                rectTransform.GetWorldCorners(corners);
+                for (var i = 0; i < corners.Length; i++)
+                {
+                    if (!hasAny)
+                    {
+                        bounds = new Bounds(corners[i], Vector3.zero);
+                        hasAny = true;
+                    }
+                    else
+                    {
+                        bounds.Encapsulate(corners[i]);
+                    }
+                }
+            }
+
+            if (!hasAny)
+            {
+                return false;
+            }
+
+            if (bounds.size.sqrMagnitude < 0.0001f)
+            {
+                bounds.Expand(1f);
+            }
+
+            return true;
+        }
+
+        private static void PositionPreviewCamera(Camera camera, Bounds bounds, float aspect)
+        {
+            var center = bounds.center;
+            var extents = bounds.extents;
+
+            var verticalHalf = extents.y;
+            var horizontalHalf = extents.x / Mathf.Max(0.01f, aspect);
+            var size = Mathf.Max(verticalHalf, horizontalHalf) * 1.15f;
+            if (size < 0.1f)
+            {
+                size = 0.5f;
+            }
+
+            camera.orthographicSize = size;
+            camera.transform.position = center + Vector3.back * 10f;
+            camera.transform.rotation = Quaternion.LookRotation(Vector3.forward, Vector3.up);
+        }
+
+        private static bool IsLikelyBlankPreview(Texture2D texture)
+        {
+            if (texture == null)
+            {
+                return true;
+            }
+
+            var pixels = texture.GetPixels32();
+            if (pixels == null || pixels.Length == 0)
+            {
+                return true;
+            }
+
+            var step = Mathf.Max(1, pixels.Length / 256);
+            var total = 0;
+            var solidBgLike = 0;
+            var almostTransparent = 0;
+            for (var i = 0; i < pixels.Length; i += step)
+            {
+                var p = pixels[i];
+                total++;
+
+                if (p.a <= 3)
+                {
+                    almostTransparent++;
+                }
+
+                var colorDelta = Mathf.Abs(p.r - 41) + Mathf.Abs(p.g - 41) + Mathf.Abs(p.b - 41);
+                if (p.a >= 250 && colorDelta <= 6)
+                {
+                    solidBgLike++;
+                }
+            }
+
+            if (total == 0)
+            {
+                return true;
+            }
+
+            var bgRatio = solidBgLike / (float)total;
+            var transparentRatio = almostTransparent / (float)total;
+            return bgRatio >= 0.995f || transparentRatio >= 0.995f;
+        }
     }
 }

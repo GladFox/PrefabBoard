@@ -12,6 +12,7 @@
 - Режим preview копируется при дублировании карточек.
 - Кэш preview теперь учитывает режим и размер холста (`prefabGuid + mode + canvasSize`).
 - UI preview pipeline переведён на preview rig (`Camera + ScreenSpaceCanvas + Content`) для более стабильного рендера UI prefab.
+- Добавлен fallback рендер world-space и warning-диагностика в Console для случаев пустого preview.
 
 ## Известные проблемы
 - Нет автоматизированного integration-теста preview в Unity Editor.

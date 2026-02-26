@@ -25,6 +25,10 @@
     - `Content` контейнер с инстансом prefab
   - все canvases инстанса принудительно переводятся в `ScreenSpaceCamera`, с нормализацией `CanvasScaler`;
   - удалён world-space bounds framing для UI preview.
+  - добавлен двойной pipeline рендера:
+    1. `ScreenSpace` rig
+    2. fallback `WorldSpace` camera framing
+  - добавлен runtime-диагностический `Debug.LogWarning` при пустом кадре или exception в preview pipeline.
 
 ## Следующие шаги
 1. Ручной smoke-test в Unity Editor на UI prefab с фиксированным размером и full-stretch.

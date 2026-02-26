@@ -100,6 +100,7 @@ UI preview рендерится через временный rig в preview sce
 - `Camera`
 - `ScreenSpaceCamera Canvas`
 - `Content` контейнер, в который инстанцируется prefab
+Если screen-space кадр пустой, выполняется fallback world-space рендер.
 
 ## Persistence and Undo
 Изменения данных выполняются через:
