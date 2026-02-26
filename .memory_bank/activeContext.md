@@ -8,6 +8,20 @@
 3. Обновить документацию и зафиксировать изменения в git.
 
 ## Последние изменения (текущая сессия)
+- Отключена подмена `Image.sprite` при `null` в preview pipeline:
+  - удалены вызовы `EnsureImagesHaveSprite(instance)` в screen/world рендер-ветках.
+  - удалена fallback-логика генерации/назначения sprite в `PreviewCache`.
+- Теперь preview рендерит UI как есть, без модификации `Image` компонентов.
+- Для UI preview рендера сменён тип временной сцены:
+  - вместо `EditorSceneManager.NewPreviewScene()` теперь создаётся временная обычная additive-сцена `NewSceneSetup.EmptyScene + NewSceneMode.Additive`;
+  - после рендера сцена удаляется через `EditorSceneManager.CloseScene(..., true)` и восстанавливается предыдущая active scene.
+- Это сделано для обхода кейса, где `ScreenSpaceCamera + uGUI` не выдаёт геометрию в `PreviewScene`.
+- Найдена причина «камера рендерит только фон» в `PrefabTemplate` rig:
+  - у template `Canvas` был `localScale = (0,0,0)`, из-за чего UI геометрия схлопывалась.
+- В `PreviewCache` добавлена принудительная нормализация трансформов rig-компонентов:
+  - `Camera`: `localPosition=(0,0,-10)`, `localRotation=identity`, `localScale=1`
+  - `Canvas RectTransform`: `localPosition=0`, `localRotation=identity`, `localScale=1`
+  - `Content RectTransform`: `localPosition=0`, `localRotation=identity`, `localScale=1`
 - Добавлен `PreviewRigSettingsAsset` (`Data`) с параметрами preview rig:
   - `rigSource` (`BuiltIn` / `PrefabTemplate`)
   - `rigPrefab`

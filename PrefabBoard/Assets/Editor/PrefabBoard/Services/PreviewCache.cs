@@ -39,8 +39,6 @@ namespace PrefabBoard.Editor.Services
         private static readonly Dictionary<string, Texture2D> Cache = new Dictionary<string, Texture2D>();
         private static readonly HashSet<string> CustomPreviewKeys = new HashSet<string>();
         private static readonly HashSet<string> FailedCustomPreviewKeys = new HashSet<string>();
-        private static Sprite _fallbackUiSprite;
-        private static Texture2D _fallbackUiTexture;
         private const string DefaultDebugScenePath = "Assets/Scenes/Test.unity";
 
         public static Texture2D GetPreview(
@@ -562,6 +560,7 @@ namespace PrefabBoard.Editor.Services
         {
             Scene previewScene = default;
             var sceneCreated = false;
+            var previousActiveScene = SceneManager.GetActiveScene();
 
             GameObject instance = null;
             PreviewRigObjects rig = null;
@@ -571,8 +570,9 @@ namespace PrefabBoard.Editor.Services
 
             try
             {
-                previewScene = EditorSceneManager.NewPreviewScene();
+                previewScene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Additive);
                 sceneCreated = true;
+                SceneManager.SetActiveScene(previewScene);
 
                 instance = Object.Instantiate(prefabAsset);
                 if (instance == null)
@@ -600,7 +600,6 @@ namespace PrefabBoard.Editor.Services
 
                 var fitMode = ResolveContentFitMode(renderMode);
                 AttachInstanceToPreviewContent(instance, rig.contentRect, canvasSize, fitMode);
-                var fallbackImageCount = EnsureImagesHaveSprite(instance);
                 PrepareUiForPreviewScreenSpace(instance, rig.camera, canvasSize);
 
                 renderTexture = RenderTexture.GetTemporary(textureSize.x, textureSize.y, 24, RenderTextureFormat.ARGB32);
@@ -619,7 +618,7 @@ namespace PrefabBoard.Editor.Services
                 PreviewDebugCapture.SetStageTexture(
                     PreviewDebugStage.ScreenSpace,
                     texture,
-                    $"ScreenSpace: rendered {textureSize.x}x{textureSize.y}, canvas {canvasSize.x}x{canvasSize.y}, fallbackImages {fallbackImageCount}");
+                    $"ScreenSpace: rendered {textureSize.x}x{textureSize.y}, canvas {canvasSize.x}x{canvasSize.y}");
 
                 return texture;
             }
@@ -655,7 +654,12 @@ namespace PrefabBoard.Editor.Services
 
                 if (sceneCreated)
                 {
-                    EditorSceneManager.ClosePreviewScene(previewScene);
+                    if (previousActiveScene.IsValid())
+                    {
+                        SceneManager.SetActiveScene(previousActiveScene);
+                    }
+
+                    EditorSceneManager.CloseScene(previewScene, true);
                 }
             }
         }
@@ -667,6 +671,7 @@ namespace PrefabBoard.Editor.Services
         {
             Scene previewScene = default;
             var sceneCreated = false;
+            var previousActiveScene = SceneManager.GetActiveScene();
 
             GameObject instance = null;
             GameObject cameraObject = null;
@@ -676,8 +681,9 @@ namespace PrefabBoard.Editor.Services
 
             try
             {
-                previewScene = EditorSceneManager.NewPreviewScene();
+                previewScene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Additive);
                 sceneCreated = true;
+                SceneManager.SetActiveScene(previewScene);
 
                 instance = Object.Instantiate(prefabAsset);
                 if (instance == null)
@@ -691,7 +697,6 @@ namespace PrefabBoard.Editor.Services
                 instance.transform.rotation = Quaternion.identity;
                 instance.transform.localScale = Vector3.one;
 
-                var fallbackImageCount = EnsureImagesHaveSprite(instance);
                 PrepareUiForPreviewWorldSpace(instance, canvasSize);
                 Canvas.ForceUpdateCanvases();
                 Canvas.ForceUpdateCanvases();
@@ -732,7 +737,7 @@ namespace PrefabBoard.Editor.Services
                 PreviewDebugCapture.SetStageTexture(
                     PreviewDebugStage.WorldSpace,
                     texture,
-                    $"WorldSpace: rendered {textureSize.x}x{textureSize.y}, bounds center {bounds.center}, size {bounds.size}, fallbackImages {fallbackImageCount}");
+                    $"WorldSpace: rendered {textureSize.x}x{textureSize.y}, bounds center {bounds.center}, size {bounds.size}");
 
                 return texture;
             }
@@ -768,7 +773,12 @@ namespace PrefabBoard.Editor.Services
 
                 if (sceneCreated)
                 {
-                    EditorSceneManager.ClosePreviewScene(previewScene);
+                    if (previousActiveScene.IsValid())
+                    {
+                        SceneManager.SetActiveScene(previousActiveScene);
+                    }
+
+                    EditorSceneManager.CloseScene(previewScene, true);
                 }
             }
         }
@@ -962,7 +972,7 @@ namespace PrefabBoard.Editor.Services
             Camera camera,
             Vector2Int canvasSize,
             PreviewRigSettingsAsset settings,
-            bool applyDefaultTransform)
+            bool _)
         {
             if (camera == null)
             {
@@ -985,12 +995,9 @@ namespace PrefabBoard.Editor.Services
             camera.orthographicSize = Mathf.Max(1f, canvasSize.y * 0.5f);
             camera.aspect = Mathf.Max(0.01f, canvasSize.x / (float)canvasSize.y);
 
-            if (applyDefaultTransform)
-            {
-                camera.transform.localPosition = new Vector3(0f, 0f, -10f);
-                camera.transform.localRotation = Quaternion.identity;
-                camera.transform.localScale = Vector3.one;
-            }
+            camera.transform.localPosition = new Vector3(0f, 0f, -10f);
+            camera.transform.localRotation = Quaternion.identity;
+            camera.transform.localScale = Vector3.one;
         }
 
         private static void ConfigurePreviewCanvas(
@@ -1011,6 +1018,9 @@ namespace PrefabBoard.Editor.Services
             canvasRect.pivot = new Vector2(0.5f, 0.5f);
             canvasRect.sizeDelta = new Vector2(canvasSize.x, canvasSize.y);
             canvasRect.anchoredPosition = Vector2.zero;
+            canvasRect.localPosition = Vector3.zero;
+            canvasRect.localRotation = Quaternion.identity;
+            canvasRect.localScale = Vector3.one;
 
             canvas.renderMode = RenderMode.ScreenSpaceCamera;
             canvas.worldCamera = previewCamera;
@@ -1038,6 +1048,9 @@ namespace PrefabBoard.Editor.Services
             contentRect.pivot = new Vector2(0.5f, 0.5f);
             contentRect.anchoredPosition = Vector2.zero;
             contentRect.sizeDelta = Vector2.zero;
+            contentRect.localPosition = Vector3.zero;
+            contentRect.localRotation = Quaternion.identity;
+            contentRect.localScale = Vector3.one;
         }
 
         private static void ApplyHideFlagsRecursively(GameObject root, HideFlags hideFlags)
@@ -1327,74 +1340,6 @@ namespace PrefabBoard.Editor.Services
             camera.orthographicSize = size;
             camera.transform.position = center + Vector3.back * 10f;
             camera.transform.rotation = Quaternion.LookRotation(Vector3.forward, Vector3.up);
-        }
-
-        private static int EnsureImagesHaveSprite(GameObject root)
-        {
-            if (root == null)
-            {
-                return 0;
-            }
-
-            var fallback = GetFallbackUiSprite();
-            if (fallback == null)
-            {
-                return 0;
-            }
-
-            var images = root.GetComponentsInChildren<Image>(true);
-            var assigned = 0;
-            foreach (var image in images)
-            {
-                if (image == null)
-                {
-                    continue;
-                }
-
-                if (image.sprite == null && image.overrideSprite == null)
-                {
-                    image.sprite = fallback;
-                    assigned++;
-                }
-            }
-
-            return assigned;
-        }
-
-        private static Sprite GetFallbackUiSprite()
-        {
-            if (_fallbackUiSprite != null)
-            {
-                return _fallbackUiSprite;
-            }
-
-            _fallbackUiSprite = AssetDatabase.GetBuiltinExtraResource<Sprite>("UI/Skin/UISprite.psd");
-            if (_fallbackUiSprite != null)
-            {
-                return _fallbackUiSprite;
-            }
-
-            if (_fallbackUiTexture == null)
-            {
-                _fallbackUiTexture = new Texture2D(2, 2, TextureFormat.RGBA32, false)
-                {
-                    hideFlags = HideFlags.HideAndDontSave,
-                    name = "PrefabBoard_FallbackUiTexture"
-                };
-                _fallbackUiTexture.SetPixels(new[] { Color.white, Color.white, Color.white, Color.white });
-                _fallbackUiTexture.Apply(false, false);
-            }
-
-            _fallbackUiSprite = Sprite.Create(
-                _fallbackUiTexture,
-                new Rect(0f, 0f, _fallbackUiTexture.width, _fallbackUiTexture.height),
-                new Vector2(0.5f, 0.5f),
-                100f);
-            if (_fallbackUiSprite != null)
-            {
-                _fallbackUiSprite.name = "PrefabBoard_FallbackUiSprite";
-            }
-            return _fallbackUiSprite;
         }
 
         private static void SetLayerRecursively(GameObject root, int layer)

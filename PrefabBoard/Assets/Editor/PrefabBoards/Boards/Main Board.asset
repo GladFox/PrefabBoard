@@ -14,9 +14,19 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp-Editor::PrefabBoard.Editor.Data.PrefabBoardAsset
   boardId: cc32039996d44ab79bb97b9a1cfdfb49
   boardName: Main Board
-  pan: {x: 1140.4861, y: 572.4898}
-  zoom: 1.721416
-  items: []
+  pan: {x: 949.0262, y: 432.29053}
+  zoom: 1.2752564
+  items:
+  - id: c346fee68eda46f5999e7075a9e9bf89
+    prefabGuid: e3d31ff64e017b0478bc10f20bb26c68
+    position: {x: -693.9436, y: -284.15656}
+    size: {x: 220, y: 120}
+    titleOverride: 
+    note: 
+    tagColor: {r: 0, g: 0, b: 0, a: 0}
+    tags: []
+    groupId: 
+    previewRenderMode: 2
   groups: []
   viewSettings:
     gridEnabled: 1

@@ -146,4 +146,4 @@ Canvas и карточки клиппируются по своим границ
 ## Known MVP Limits
 - Внешний drag для инстанса префаба сделан через `Ctrl+LMB` (чтобы не конфликтовать с внутренним перемещением).
 - Ресайз групп (handles) не включен в текущий MVP.
-- Preview: для uGUI prefab используется Canvas+Camera fallback в preview scene; для остальных asset'ов сохраняется `AssetPreview` (асинхронная догрузка).
+- Preview: для uGUI prefab используется Canvas+Camera рендер во временной additive-сцене (без подмены `Image.sprite` при `null`); для остальных asset'ов сохраняется `AssetPreview` (асинхронная догрузка).

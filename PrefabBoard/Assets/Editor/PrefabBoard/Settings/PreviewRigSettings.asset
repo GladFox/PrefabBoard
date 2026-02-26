@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b4f8a7d4cfad4d8a8ef9286f2b9a2f7d, type: 3}
+  m_Name: PreviewRigSettings
+  m_EditorClassIdentifier: Assembly-CSharp-Editor::PrefabBoard.Editor.Data.PreviewRigSettingsAsset
+  rigSource: 1
+  rigPrefab: {fileID: 3714740684596390783, guid: b09fdab36e3dc1547920516cc1e8e760, type: 3}
+  cameraPath: Rig/Camera
+  canvasPath: Rig/Canvas
+  contentPath: Rig/Canvas/Content
+  cameraBackground: {r: 0, g: 0.035458565, b: 1, a: 1}
+  nearClipPlane: 0.01
+  farClipPlane: 200
+  planeDistance: 1
+  forceUiLayer: 1

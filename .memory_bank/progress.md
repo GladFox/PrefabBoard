@@ -9,7 +9,7 @@
 - Режим preview хранится на уровне карточки (`BoardItemData.previewRenderMode`) и дублируется вместе с карточкой.
 - Кэш preview учитывает режим и размер холста (`prefabGuid + mode + canvasSize`).
 - UI preview рендерится через rig `Camera + ScreenSpaceCanvas + Content`, с layer routing на `UI` слой.
-- Добавлены fallback'и (`Image` sprite fallback + world-space fallback при flat screen-space кадре).
+- Добавлен world-space fallback при flat screen-space кадре.
 - Добавлены инструменты диагностики:
   - `Tools/PrefabBoard/Preview Debug` (raw кадры `ScreenSpace/WorldSpace/Final`)
   - экспорт debug PNG в `Temp/PrefabBoardPreviewDebug`
@@ -25,6 +25,10 @@
 - Режимы карточки `Resolution/Control Size` теперь управляют не только размером холста, но и fit-режимом контента:
   - fullscreen
   - single-control
+- Исправлен кейс `PrefabTemplate`, где `Canvas` из шаблона мог иметь `localScale=0`:
+  теперь camera/canvas/content трансформы нормализуются при сборке preview rig.
+- Временный рендер UI больше не использует `PreviewScene`; используется временная additive-сцена, ближе к обычному сценарию рендера uGUI.
+- Подмена `Image.sprite` при `null` полностью отключена в preview pipeline.
 
 ## Известные проблемы
 - В проблемном кейсе пользователя preview всё ещё может показывать пустой/серый результат; причина пока не подтверждена.
@@ -37,9 +41,9 @@
 - Preview система стала параметризованной (режим + canvas size) и воспроизводимой через test scene builder.
 - Конфиг камеры/canvas для debug-сцены теперь берётся из того же `PreviewCache`, что уменьшает расхождение между runtime preview и ручной диагностикой.
 - Проверка изменений после `last_checked_commit` выполнена:
-  - `git log fefe755...HEAD`
-  - найдено: `c6dd45d`.
+  - `git log c6dd45d...HEAD`
+  - найдено: `d129227`.
 
 ## Контроль изменений
-- last_checked_commit: c6dd45d
+- last_checked_commit: d129227
 - last_checked_date: 2026-02-26
