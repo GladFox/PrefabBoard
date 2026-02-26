@@ -15,6 +15,7 @@
 .pb-canvas {
     flex-grow: 1;
     background-color: rgb(26, 29, 35);
+    overflow: hidden;
 }
 
 .pb-layer-groups,
@@ -75,6 +76,7 @@
     padding-right: 6px;
     padding-top: 5px;
     padding-bottom: 5px;
+    overflow: hidden;
 }
 
 .pb-card-preview {
@@ -85,6 +87,7 @@
     margin-bottom: 4px;
     unity-background-scale-mode: scale-to-fit;
     background-color: rgba(255, 255, 255, 0.03);
+    overflow: hidden;
 }
 
 .pb-card-title {

@@ -274,16 +274,6 @@ namespace PrefabBoard.Editor.Services
                    Mathf.Abs(rectTransform.offsetMax.y) <= epsilon;
         }
 
-        private static Vector2Int ClampToViewportRange(Vector2Int size, Vector2Int resolutionSize)
-        {
-            var maxWidth = Mathf.Clamp(Mathf.RoundToInt(resolutionSize.x * 1.5f), MinCanvasSize, MaxCanvasSize);
-            var maxHeight = Mathf.Clamp(Mathf.RoundToInt(resolutionSize.y * 1.5f), MinCanvasSize, MaxCanvasSize);
-
-            return new Vector2Int(
-                Mathf.Clamp(size.x, MinCanvasSize, maxWidth),
-                Mathf.Clamp(size.y, MinCanvasSize, maxHeight));
-        }
-
         private static Vector2Int SanitizeCanvasSize(Vector2 rawSize, Vector2Int fallback)
         {
             var width = Mathf.RoundToInt(rawSize.x);
@@ -347,7 +337,7 @@ namespace PrefabBoard.Editor.Services
                 instance.transform.localScale = Vector3.one;
 
                 var textureSize = ComputeTextureSize(canvasSize);
-                var previewCamera = CreatePreviewCamera(previewScene, textureSize, out cameraObject);
+                var previewCamera = CreatePreviewCamera(previewScene, canvasSize, out cameraObject);
                 var previewCanvas = CreatePreviewCanvas(previewScene, previewCamera, canvasSize, out canvasObject);
                 var previewContent = CreatePreviewContent(previewScene, previewCanvas, out contentObject);
 
@@ -518,7 +508,7 @@ namespace PrefabBoard.Editor.Services
             }
         }
 
-        private static Camera CreatePreviewCamera(Scene previewScene, Vector2Int textureSize, out GameObject cameraObject)
+        private static Camera CreatePreviewCamera(Scene previewScene, Vector2Int canvasSize, out GameObject cameraObject)
         {
             cameraObject = new GameObject("PrefabBoardPreviewCamera");
             cameraObject.hideFlags = HideFlags.HideAndDontSave;
@@ -531,8 +521,8 @@ namespace PrefabBoard.Editor.Services
             camera.nearClipPlane = 0.01f;
             camera.farClipPlane = 200f;
             camera.orthographic = true;
-            camera.orthographicSize = Mathf.Max(1f, textureSize.y * 0.5f);
-            camera.aspect = Mathf.Max(0.01f, textureSize.x / (float)textureSize.y);
+            camera.orthographicSize = Mathf.Max(1f, canvasSize.y * 0.5f);
+            camera.aspect = Mathf.Max(0.01f, canvasSize.x / (float)canvasSize.y);
             camera.transform.position = new Vector3(0f, 0f, -10f);
             camera.transform.rotation = Quaternion.identity;
             return camera;
