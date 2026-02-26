@@ -418,17 +418,37 @@ namespace PrefabBoard.Editor.Services
             {
                 canvas.renderMode = RenderMode.WorldSpace;
                 canvas.worldCamera = null;
+                canvas.pixelPerfect = false;
 
                 var canvasRect = canvas.GetComponent<RectTransform>();
-                if (canvasRect != null)
+                if (canvasRect != null && ShouldApplyCanvasSizeHint(canvasRect))
                 {
-                    canvasRect.anchorMin = new Vector2(0.5f, 0.5f);
-                    canvasRect.anchorMax = new Vector2(0.5f, 0.5f);
-                    canvasRect.pivot = new Vector2(0.5f, 0.5f);
                     canvasRect.sizeDelta = new Vector2(canvasSize.x, canvasSize.y);
-                    canvasRect.anchoredPosition3D = Vector3.zero;
                 }
             }
+
+            var scalers = root.GetComponentsInChildren<CanvasScaler>(true);
+            foreach (var scaler in scalers)
+            {
+                scaler.uiScaleMode = CanvasScaler.ScaleMode.ConstantPixelSize;
+                scaler.scaleFactor = 1f;
+            }
+        }
+
+        private static bool ShouldApplyCanvasSizeHint(RectTransform canvasRect)
+        {
+            if (canvasRect == null)
+            {
+                return false;
+            }
+
+            if (IsStretchRect(canvasRect))
+            {
+                return true;
+            }
+
+            var rectSize = canvasRect.rect.size;
+            return rectSize.x < MinCanvasSize || rectSize.y < MinCanvasSize;
         }
 
         private static Vector2Int ComputeTextureSize(Vector2Int canvasSize)

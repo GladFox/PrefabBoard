@@ -8,12 +8,15 @@
   - `Resolution`
   - `Control Size`
 - Добавлена кнопка-переключатель режима на карточке (`A/R/C`) с сохранением в `BoardItemData`.
+- Кнопка режима перенесена в правый нижний `action`-блок карточки (блок расширяем под будущие кнопки).
 - Режим preview копируется при дублировании карточек.
 - Кэш preview теперь учитывает режим и размер холста (`prefabGuid + mode + canvasSize`).
+- Подготовка UI canvas для preview скорректирована: сохранение исходного layout + нормализация `CanvasScaler`, чтобы избежать пустого серого рендера.
 
 ## Известные проблемы
 - Нет автоматизированного integration-теста preview в Unity Editor.
 - Поведение `Auto` основано на эвристике stretch rect и может требовать тонкой подстройки для нестандартных иерархий UI.
+- Требуется ручная проверка, что проблема пустого серого рендера закрыта на целевых префабах.
 - Внешний drag в Scene/Hierarchy для MVP остаётся на `Ctrl+LMB`.
 
 ## Развитие решений
@@ -23,5 +26,5 @@
   - `git log 25eec60...HEAD` -> `aaa128f feat(editor): add canvas fallback preview for UI prefabs`.
 
 ## Контроль изменений
-- last_checked_commit: aaa128f
+- last_checked_commit: 77461e3
 - last_checked_date: 2026-02-26

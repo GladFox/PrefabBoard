@@ -11,6 +11,7 @@ namespace PrefabBoard.Editor.UI
         private readonly Label _titleLabel;
         private readonly Label _noteLabel;
         private readonly VisualElement _missingIndicator;
+        private readonly VisualElement _actionsContainer;
         private readonly Button _renderModeButton;
 
         public string ItemId { get; }
@@ -39,17 +40,23 @@ namespace PrefabBoard.Editor.UI
             _missingIndicator = new VisualElement();
             _missingIndicator.AddToClassList("pb-card-missing");
 
+            _actionsContainer = new VisualElement();
+            _actionsContainer.AddToClassList("pb-card-actions");
+
             _renderModeButton = new Button(OnRenderModeButtonClicked);
             _renderModeButton.AddToClassList("pb-card-render-mode");
             _renderModeButton.focusable = false;
             _renderModeButton.RegisterCallback<PointerDownEvent>(evt => evt.StopPropagation());
             _renderModeButton.RegisterCallback<PointerUpEvent>(evt => evt.StopPropagation());
+            _actionsContainer.RegisterCallback<PointerDownEvent>(evt => evt.StopPropagation());
+            _actionsContainer.RegisterCallback<PointerUpEvent>(evt => evt.StopPropagation());
+            _actionsContainer.Add(_renderModeButton);
 
             Add(_previewImage);
             Add(_titleLabel);
             Add(_noteLabel);
             Add(_missingIndicator);
-            Add(_renderModeButton);
+            Add(_actionsContainer);
 
             RegisterCallback<PointerDownEvent>(OnPointerDown);
             RegisterCallback<ContextualMenuPopulateEvent>(OnPopulateContextMenu);
