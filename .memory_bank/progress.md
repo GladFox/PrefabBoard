@@ -13,6 +13,8 @@
 - Кэш preview теперь учитывает режим и размер холста (`prefabGuid + mode + canvasSize`).
 - UI preview pipeline переведён на preview rig (`Camera + ScreenSpaceCanvas + Content`) для более стабильного рендера UI prefab.
 - Добавлен fallback рендер world-space и warning-диагностика в Console для случаев пустого preview.
+- Отключено отбрасывание preview по эвристике «пустого кадра»; приоритет отдаётся реальному рендер-результату пайплайна.
+- Для режима `Control Size` canvas size теперь совпадает с размером элемента (`item.size`) без дополнительного viewport clamp.
 
 ## Известные проблемы
 - Нет автоматизированного integration-теста preview в Unity Editor.

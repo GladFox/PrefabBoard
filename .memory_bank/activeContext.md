@@ -29,6 +29,8 @@
     1. `ScreenSpace` rig
     2. fallback `WorldSpace` camera framing
   - добавлен runtime-диагностический `Debug.LogWarning` при пустом кадре или exception в preview pipeline.
+  - убрана эвристика отбрасывания «пустых» кадров, чтобы не падать в icon fallback при спорных кейсах.
+  - в `Control Size` размер preview canvas теперь равен размеру элемента без viewport-clamp.
 
 ## Следующие шаги
 1. Ручной smoke-test в Unity Editor на UI prefab с фиксированным размером и full-stretch.

@@ -202,7 +202,7 @@ namespace PrefabBoard.Editor.Services
             var hinted = SanitizeCanvasSize(controlSizeHint, new Vector2Int(0, 0));
             if (hinted.x > 0 && hinted.y > 0)
             {
-                return ClampToViewportRange(hinted, resolutionSize);
+                return hinted;
             }
 
             if (TryGetPrimaryRectTransform(prefabAsset, out var rectTransform))
@@ -213,13 +213,13 @@ namespace PrefabBoard.Editor.Services
                     var fromRect = SanitizeCanvasSize(rectSize, new Vector2Int(0, 0));
                     if (fromRect.x > 0 && fromRect.y > 0)
                     {
-                        return ClampToViewportRange(fromRect, resolutionSize);
+                        return fromRect;
                     }
                 }
             }
 
-            var fallback = new Vector2Int(Mathf.RoundToInt(resolutionSize.x * 0.5f), Mathf.RoundToInt(resolutionSize.y * 0.5f));
-            return ClampToViewportRange(fallback, resolutionSize);
+            var fallback = new Vector2Int(220, 120);
+            return fallback;
         }
 
         private static bool IsStretchToScreenPrefab(GameObject prefabAsset)
@@ -302,25 +302,15 @@ namespace PrefabBoard.Editor.Services
         private static Texture2D TryRenderUiPrefabPreview(GameObject prefabAsset, Vector2Int canvasSize)
         {
             var screenSpace = TryRenderUiPrefabPreviewScreenSpace(prefabAsset, canvasSize);
-            if (screenSpace != null && !IsLikelyBlankPreview(screenSpace))
+            if (screenSpace != null)
             {
                 return screenSpace;
             }
 
-            if (screenSpace != null)
-            {
-                Object.DestroyImmediate(screenSpace);
-            }
-
             var worldSpace = TryRenderUiPrefabPreviewWorldSpace(prefabAsset, canvasSize);
-            if (worldSpace != null && !IsLikelyBlankPreview(worldSpace))
-            {
-                return worldSpace;
-            }
-
             if (worldSpace != null)
             {
-                Object.DestroyImmediate(worldSpace);
+                return worldSpace;
             }
 
             Debug.LogWarning("PrefabBoard: UI preview render produced an empty frame for " + AssetDatabase.GetAssetPath(prefabAsset));
@@ -365,11 +355,6 @@ namespace PrefabBoard.Editor.Services
                 PrepareUiForPreviewScreenSpace(instance, previewCamera, canvasSize);
                 Canvas.ForceUpdateCanvases();
                 Canvas.ForceUpdateCanvases();
-
-                if (!HasRenderableUi(instance))
-                {
-                    return null;
-                }
 
                 renderTexture = RenderTexture.GetTemporary(textureSize.x, textureSize.y, 24, RenderTextureFormat.ARGB32);
                 previewCamera.targetTexture = renderTexture;
@@ -709,21 +694,6 @@ namespace PrefabBoard.Editor.Services
             }
         }
 
-        private static bool HasRenderableUi(GameObject root)
-        {
-            if (root == null)
-            {
-                return false;
-            }
-
-            if (root.GetComponentInChildren<Graphic>(true) != null)
-            {
-                return true;
-            }
-
-            return root.GetComponentInChildren<CanvasRenderer>(true) != null;
-        }
-
         private static bool ShouldApplyCanvasSizeHint(RectTransform canvasRect)
         {
             if (canvasRect == null)
@@ -826,48 +796,5 @@ namespace PrefabBoard.Editor.Services
             camera.transform.rotation = Quaternion.LookRotation(Vector3.forward, Vector3.up);
         }
 
-        private static bool IsLikelyBlankPreview(Texture2D texture)
-        {
-            if (texture == null)
-            {
-                return true;
-            }
-
-            var pixels = texture.GetPixels32();
-            if (pixels == null || pixels.Length == 0)
-            {
-                return true;
-            }
-
-            var step = Mathf.Max(1, pixels.Length / 256);
-            var total = 0;
-            var solidBgLike = 0;
-            var almostTransparent = 0;
-            for (var i = 0; i < pixels.Length; i += step)
-            {
-                var p = pixels[i];
-                total++;
-
-                if (p.a <= 3)
-                {
-                    almostTransparent++;
-                }
-
-                var colorDelta = Mathf.Abs(p.r - 41) + Mathf.Abs(p.g - 41) + Mathf.Abs(p.b - 41);
-                if (p.a >= 250 && colorDelta <= 6)
-                {
-                    solidBgLike++;
-                }
-            }
-
-            if (total == 0)
-            {
-                return true;
-            }
-
-            var bgRatio = solidBgLike / (float)total;
-            var transparentRatio = almostTransparent / (float)total;
-            return bgRatio >= 0.995f || transparentRatio >= 0.995f;
-        }
     }
 }
