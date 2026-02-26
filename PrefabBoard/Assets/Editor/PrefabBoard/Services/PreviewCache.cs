@@ -10,6 +10,7 @@ namespace PrefabBoard.Editor.Services
 {
     public static class PreviewCache
     {
+        private const int UiLayer = 5;
         private const int DefaultResolutionWidth = 1920;
         private const int DefaultResolutionHeight = 1080;
         private const int MinCanvasSize = 64;
@@ -368,6 +369,7 @@ namespace PrefabBoard.Editor.Services
                 instance.transform.position = Vector3.zero;
                 instance.transform.rotation = Quaternion.identity;
                 instance.transform.localScale = Vector3.one;
+                SetLayerRecursively(instance, UiLayer);
 
                 var textureSize = ComputeTextureSize(canvasSize);
                 var previewCamera = CreatePreviewCamera(previewScene, canvasSize, out cameraObject);
@@ -557,12 +559,13 @@ namespace PrefabBoard.Editor.Services
         {
             cameraObject = new GameObject("PrefabBoardPreviewCamera");
             cameraObject.hideFlags = HideFlags.HideAndDontSave;
+            cameraObject.layer = UiLayer;
             SceneManager.MoveGameObjectToScene(cameraObject, previewScene);
 
             var camera = cameraObject.AddComponent<Camera>();
             camera.clearFlags = CameraClearFlags.SolidColor;
-            camera.backgroundColor = new Color(1.0f, 0.0f, 1.0f, 1f);
-            camera.cullingMask = ~0;
+            camera.backgroundColor = new Color(0.16f, 0.16f, 0.16f, 1f);
+            camera.cullingMask = 1 << UiLayer;
             camera.nearClipPlane = 0.01f;
             camera.farClipPlane = 200f;
             camera.orthographic = true;
@@ -577,6 +580,7 @@ namespace PrefabBoard.Editor.Services
         {
             canvasObject = new GameObject("PrefabBoardPreviewCanvas", typeof(RectTransform), typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
             canvasObject.hideFlags = HideFlags.HideAndDontSave;
+            canvasObject.layer = UiLayer;
             SceneManager.MoveGameObjectToScene(canvasObject, previewScene);
 
             var canvasRect = canvasObject.GetComponent<RectTransform>();
@@ -587,13 +591,16 @@ namespace PrefabBoard.Editor.Services
             canvasRect.anchoredPosition = Vector2.zero;
 
             var canvas = canvasObject.GetComponent<Canvas>();
-            canvas.renderMode = RenderMode.WorldSpace;
+            canvas.renderMode = RenderMode.ScreenSpaceCamera;
             canvas.worldCamera = previewCamera;
+            canvas.planeDistance = 1f;
             canvas.pixelPerfect = false;
 
             var scaler = canvasObject.GetComponent<CanvasScaler>();
-            scaler.uiScaleMode = CanvasScaler.ScaleMode.ConstantPixelSize;
-            scaler.scaleFactor = 1f;
+            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+            scaler.referenceResolution = new Vector2(canvasSize.x, canvasSize.y);
+            scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
+            scaler.matchWidthOrHeight = 0.5f;
             scaler.referencePixelsPerUnit = 100f;
 
             return canvasRect;
@@ -603,6 +610,7 @@ namespace PrefabBoard.Editor.Services
         {
             contentObject = new GameObject("Content", typeof(RectTransform));
             contentObject.hideFlags = HideFlags.HideAndDontSave;
+            contentObject.layer = UiLayer;
             SceneManager.MoveGameObjectToScene(contentObject, previewScene);
 
             var contentRect = contentObject.GetComponent<RectTransform>();
@@ -907,6 +915,24 @@ namespace PrefabBoard.Editor.Services
                 _fallbackUiSprite.name = "PrefabBoard_FallbackUiSprite";
             }
             return _fallbackUiSprite;
+        }
+
+        private static void SetLayerRecursively(GameObject root, int layer)
+        {
+            if (root == null)
+            {
+                return;
+            }
+
+            root.layer = layer;
+            var transforms = root.GetComponentsInChildren<Transform>(true);
+            foreach (var tr in transforms)
+            {
+                if (tr != null)
+                {
+                    tr.gameObject.layer = layer;
+                }
+            }
         }
 
         private static bool IsFlatTexture(Texture2D texture)

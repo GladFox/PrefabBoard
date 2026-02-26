@@ -22,6 +22,8 @@
 - Для preview-инстанса добавлена подстановка built-in `UISprite` в `UI.Image` без source sprite, чтобы избежать пустой прозрачной отрисовки.
 - Добавлен runtime fallback-sprite (white 2x2), если built-in `UISprite` недоступен.
 - Если screen-space рендер даёт плоский фон, автоматически пробуется world-space и выбирается неплоский кадр.
+- Исправлен wrapper canvas для screen-space preview (`RenderMode.ScreenSpaceCamera`).
+- Добавлен явный layer routing на UI слой + `camera.cullingMask = UI`.
 
 ## Известные проблемы
 - Нет автоматизированного integration-теста preview в Unity Editor.

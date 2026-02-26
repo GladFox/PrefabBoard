@@ -103,6 +103,7 @@ UI preview рендерится через временный rig в preview sce
 - `Camera`
 - `ScreenSpaceCamera Canvas`
 - `Content` контейнер, в который инстанцируется prefab
+В screen-space pipeline используется явная маршрутизация по `UI` layer (`camera.cullingMask = UI`).
 Если screen-space кадр пустой, выполняется fallback world-space рендер.
 Для диагностики доступно окно `Tools/PrefabBoard/Preview Debug`:
 - показывает raw кадры `ScreenSpace`, `WorldSpace`, `Final`

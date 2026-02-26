@@ -48,6 +48,9 @@
 - Усилен fallback:
   - если `ScreenSpace` кадр получается плоским (однотонный фон), автоматически пробуем `WorldSpace` и выбираем неплоский результат.
   - если built-in `UISprite` недоступен, создаётся runtime белый fallback-sprite для `Image`.
+- Исправлена критическая настройка preview canvas:
+  - в screen-space пайплайне wrapper-canvas теперь `ScreenSpaceCamera` (ранее ошибочно был `WorldSpace`).
+  - добавлен явный UI layer routing: instance/canvas/content/camera на `UI` слой и `camera.cullingMask = UI`.
 
 ## Следующие шаги
 1. Открыть Unity и проверить preview `Assets/Dialog.prefab` на карточке.
