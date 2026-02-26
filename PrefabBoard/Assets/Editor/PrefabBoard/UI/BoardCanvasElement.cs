@@ -129,6 +129,8 @@ namespace PrefabBoard.Editor.UI
 
         private void OnScheduledRefreshTick()
         {
+            TryStartExternalDragByWindowExit();
+
             if (!CanRefreshNow())
             {
                 return;
@@ -574,7 +576,7 @@ namespace PrefabBoard.Editor.UI
         {
             var item = FindItem(card.ItemId);
             if (item == null) return;
-            StartExternalDrag(item);
+            StartExternalDrag(new[] { item });
         }
 
         private void OnCardContextMenu(PrefabCardElement card, ContextualMenuPopulateEvent evt)
@@ -1000,44 +1002,93 @@ namespace PrefabBoard.Editor.UI
                 return false;
             }
 
+            var dragItems = new List<BoardItemData>();
             var primary = !string.IsNullOrEmpty(_dragPrimaryItemId) ? FindItem(_dragPrimaryItemId) : null;
-            if (primary != null && StartExternalDrag(primary))
+            if (primary != null)
             {
-                return true;
+                dragItems.Add(primary);
             }
 
             foreach (var kv in _dragStartItemPos)
             {
                 var item = FindItem(kv.Key);
-                if (item != null && StartExternalDrag(item))
+                if (item != null && dragItems.All(x => x.id != item.id))
                 {
-                    return true;
+                    dragItems.Add(item);
                 }
             }
 
-            return false;
+            return StartExternalDrag(dragItems);
         }
 
-        private static bool StartExternalDrag(BoardItemData item)
+        private void TryStartExternalDragByWindowExit()
         {
-            if (item == null)
+            if (_mode != Mode.DragItems || _pointerId < 0 || _dragStartItemPos.Count == 0)
+            {
+                return;
+            }
+
+            if (!Input.GetMouseButton(0))
+            {
+                return;
+            }
+
+            var hoveredWindow = EditorWindow.mouseOverWindow;
+            if (hoveredWindow != null && hoveredWindow.GetType() == typeof(PrefabBoardWindow))
+            {
+                return;
+            }
+
+            if (TryStartExternalDragFromCurrentDrag())
+            {
+                ClearDragState();
+                RefreshVisualState();
+            }
+        }
+
+        private static bool StartExternalDrag(IEnumerable<BoardItemData> items)
+        {
+            if (items == null)
             {
                 return false;
             }
 
-            if (!AssetGuidUtils.TryLoadAssetByGuid<GameObject>(item.prefabGuid, out var prefabAsset) || prefabAsset == null)
+            var objects = new List<UnityEngine.Object>();
+            var paths = new List<string>();
+            foreach (var item in items)
+            {
+                if (item == null)
+                {
+                    continue;
+                }
+
+                if (!AssetGuidUtils.TryLoadAssetByGuid<GameObject>(item.prefabGuid, out var prefabAsset) || prefabAsset == null)
+                {
+                    continue;
+                }
+
+                objects.Add(prefabAsset);
+                var path = AssetDatabase.GetAssetPath(prefabAsset);
+                if (!string.IsNullOrEmpty(path))
+                {
+                    paths.Add(path);
+                }
+            }
+
+            if (objects.Count == 0)
             {
                 return false;
             }
 
             DragAndDrop.PrepareStartDrag();
-            DragAndDrop.objectReferences = new UnityEngine.Object[] { prefabAsset };
-            var path = AssetDatabase.GetAssetPath(prefabAsset);
-            if (!string.IsNullOrEmpty(path))
+            DragAndDrop.objectReferences = objects.ToArray();
+            if (paths.Count > 0)
             {
-                DragAndDrop.paths = new[] { path };
+                DragAndDrop.paths = paths.ToArray();
             }
-            DragAndDrop.StartDrag(prefabAsset.name);
+
+            var label = objects.Count == 1 ? objects[0].name : $"Prefabs ({objects.Count})";
+            DragAndDrop.StartDrag(label);
             return true;
         }
 

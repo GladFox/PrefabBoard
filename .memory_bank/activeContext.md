@@ -8,6 +8,10 @@
 3. Обновить документацию и зафиксировать изменения в git.
 
 ## Последние изменения (текущая сессия)
+- Усилен механизм drag-out в Scene/Hierarchy:
+  - добавлен fallback-триггер через `EditorWindow.mouseOverWindow` в scheduler;
+  - внешний drag стартует даже если после выхода курсора из Canvas перестали приходить `PointerMove` события.
+- В drag-out поддержан multi-item payload (если во внутреннем drag выбрано несколько карточек).
 - Добавлен drag-out workflow из доски в Scene/Hierarchy:
   - при `LMB drag` карточки за пределы Canvas запускается `DragAndDrop` prefab-asset;
   - если префаб отсутствует/не резолвится, внешний drag не стартует;
