@@ -818,6 +818,13 @@ namespace PrefabBoard.Editor.UI
             const float quantizeStep = 32f;
             var width = Mathf.Max(320f, contentRect.width);
             var height = Mathf.Max(180f, contentRect.height);
+
+            if (GameViewResolutionUtils.TryGetResolution(out var gameViewResolution))
+            {
+                width = Mathf.Max(320f, gameViewResolution.x);
+                height = Mathf.Max(180f, gameViewResolution.y);
+            }
+
             width = Mathf.Round(width / quantizeStep) * quantizeStep;
             height = Mathf.Round(height / quantizeStep) * quantizeStep;
             return new Vector2(width, height);
