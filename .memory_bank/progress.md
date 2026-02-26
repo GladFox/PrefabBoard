@@ -11,7 +11,7 @@
 - Кнопка режима перенесена в правый нижний `action`-блок карточки (блок расширяем под будущие кнопки).
 - Режим preview копируется при дублировании карточек.
 - Кэш preview теперь учитывает режим и размер холста (`prefabGuid + mode + canvasSize`).
-- Подготовка UI canvas для preview скорректирована: сохранение исходного layout + нормализация `CanvasScaler`, чтобы избежать пустого серого рендера.
+- UI preview pipeline переведён на preview rig (`Camera + ScreenSpaceCanvas + Content`) для более стабильного рендера UI prefab.
 
 ## Известные проблемы
 - Нет автоматизированного integration-теста preview в Unity Editor.
@@ -26,5 +26,5 @@
   - `git log 25eec60...HEAD` -> `aaa128f feat(editor): add canvas fallback preview for UI prefabs`.
 
 ## Контроль изменений
-- last_checked_commit: 77461e3
+- last_checked_commit: d700552
 - last_checked_date: 2026-02-26

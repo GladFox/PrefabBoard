@@ -306,6 +306,8 @@ namespace PrefabBoard.Editor.Services
 
             GameObject instance = null;
             GameObject cameraObject = null;
+            GameObject canvasObject = null;
+            GameObject contentObject = null;
             RenderTexture renderTexture = null;
             Texture2D texture = null;
             var previousActive = RenderTexture.active;
@@ -326,33 +328,24 @@ namespace PrefabBoard.Editor.Services
                 instance.transform.rotation = Quaternion.identity;
                 instance.transform.localScale = Vector3.one;
 
-                PrepareUiForPreview(instance, canvasSize);
+                var textureSize = ComputeTextureSize(canvasSize);
+                var previewCamera = CreatePreviewCamera(previewScene, textureSize, out cameraObject);
+                var previewCanvas = CreatePreviewCanvas(previewScene, previewCamera, canvasSize, out canvasObject);
+                var previewContent = CreatePreviewContent(previewScene, previewCanvas, out contentObject);
+
+                AttachInstanceToPreviewContent(instance, previewContent, canvasSize);
+                PrepareUiForPreview(instance, previewCamera, canvasSize);
+                Canvas.ForceUpdateCanvases();
                 Canvas.ForceUpdateCanvases();
 
-                if (!TryCalculateWorldBounds(instance, out var bounds))
+                if (!HasRenderableUi(instance))
                 {
                     return null;
                 }
 
-                var textureSize = ComputeTextureSize(canvasSize);
-                var aspect = Mathf.Max(0.01f, textureSize.x / (float)textureSize.y);
-
-                cameraObject = new GameObject("PrefabBoardPreviewCamera");
-                cameraObject.hideFlags = HideFlags.HideAndDontSave;
-                SceneManager.MoveGameObjectToScene(cameraObject, previewScene);
-
-                var camera = cameraObject.AddComponent<Camera>();
-                camera.clearFlags = CameraClearFlags.SolidColor;
-                camera.backgroundColor = new Color(0.16f, 0.16f, 0.16f, 1f);
-                camera.orthographic = true;
-                camera.nearClipPlane = 0.01f;
-                camera.farClipPlane = 1000f;
-
-                PositionPreviewCamera(camera, bounds, aspect);
-
                 renderTexture = RenderTexture.GetTemporary(textureSize.x, textureSize.y, 24, RenderTextureFormat.ARGB32);
-                camera.targetTexture = renderTexture;
-                camera.Render();
+                previewCamera.targetTexture = renderTexture;
+                previewCamera.Render();
 
                 RenderTexture.active = renderTexture;
                 texture = new Texture2D(textureSize.x, textureSize.y, TextureFormat.RGBA32, false)
@@ -387,6 +380,16 @@ namespace PrefabBoard.Editor.Services
                     Object.DestroyImmediate(cameraObject);
                 }
 
+                if (contentObject != null)
+                {
+                    Object.DestroyImmediate(contentObject);
+                }
+
+                if (canvasObject != null)
+                {
+                    Object.DestroyImmediate(canvasObject);
+                }
+
                 if (instance != null)
                 {
                     Object.DestroyImmediate(instance);
@@ -399,7 +402,110 @@ namespace PrefabBoard.Editor.Services
             }
         }
 
-        private static void PrepareUiForPreview(GameObject root, Vector2Int canvasSize)
+        private static Camera CreatePreviewCamera(Scene previewScene, Vector2Int textureSize, out GameObject cameraObject)
+        {
+            cameraObject = new GameObject("PrefabBoardPreviewCamera");
+            cameraObject.hideFlags = HideFlags.HideAndDontSave;
+            SceneManager.MoveGameObjectToScene(cameraObject, previewScene);
+
+            var camera = cameraObject.AddComponent<Camera>();
+            camera.clearFlags = CameraClearFlags.SolidColor;
+            camera.backgroundColor = new Color(0.16f, 0.16f, 0.16f, 1f);
+            camera.cullingMask = ~0;
+            camera.nearClipPlane = 0.01f;
+            camera.farClipPlane = 200f;
+            camera.orthographic = true;
+            camera.orthographicSize = Mathf.Max(1f, textureSize.y * 0.5f);
+            camera.aspect = Mathf.Max(0.01f, textureSize.x / (float)textureSize.y);
+            camera.transform.position = new Vector3(0f, 0f, -10f);
+            camera.transform.rotation = Quaternion.identity;
+            return camera;
+        }
+
+        private static RectTransform CreatePreviewCanvas(Scene previewScene, Camera previewCamera, Vector2Int canvasSize, out GameObject canvasObject)
+        {
+            canvasObject = new GameObject("PrefabBoardPreviewCanvas", typeof(RectTransform), typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
+            canvasObject.hideFlags = HideFlags.HideAndDontSave;
+            SceneManager.MoveGameObjectToScene(canvasObject, previewScene);
+
+            var canvasRect = canvasObject.GetComponent<RectTransform>();
+            canvasRect.anchorMin = Vector2.zero;
+            canvasRect.anchorMax = Vector2.one;
+            canvasRect.pivot = new Vector2(0.5f, 0.5f);
+            canvasRect.sizeDelta = Vector2.zero;
+            canvasRect.anchoredPosition = Vector2.zero;
+
+            var canvas = canvasObject.GetComponent<Canvas>();
+            canvas.renderMode = RenderMode.ScreenSpaceCamera;
+            canvas.worldCamera = previewCamera;
+            canvas.planeDistance = 1f;
+            canvas.pixelPerfect = false;
+
+            var scaler = canvasObject.GetComponent<CanvasScaler>();
+            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+            scaler.referenceResolution = new Vector2(canvasSize.x, canvasSize.y);
+            scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
+            scaler.matchWidthOrHeight = 0.5f;
+            scaler.referencePixelsPerUnit = 100f;
+
+            return canvasRect;
+        }
+
+        private static RectTransform CreatePreviewContent(Scene previewScene, RectTransform canvasRect, out GameObject contentObject)
+        {
+            contentObject = new GameObject("Content", typeof(RectTransform));
+            contentObject.hideFlags = HideFlags.HideAndDontSave;
+            SceneManager.MoveGameObjectToScene(contentObject, previewScene);
+
+            var contentRect = contentObject.GetComponent<RectTransform>();
+            contentRect.SetParent(canvasRect, false);
+            contentRect.anchorMin = Vector2.zero;
+            contentRect.anchorMax = Vector2.one;
+            contentRect.offsetMin = Vector2.zero;
+            contentRect.offsetMax = Vector2.zero;
+            contentRect.pivot = new Vector2(0.5f, 0.5f);
+            contentRect.anchoredPosition = Vector2.zero;
+            return contentRect;
+        }
+
+        private static void AttachInstanceToPreviewContent(GameObject instance, RectTransform contentRect, Vector2Int canvasSize)
+        {
+            if (instance == null || contentRect == null)
+            {
+                return;
+            }
+
+            if (instance.transform is RectTransform rootRect)
+            {
+                rootRect.SetParent(contentRect, false);
+                rootRect.localScale = Vector3.one;
+
+                if (IsStretchRect(rootRect))
+                {
+                    rootRect.offsetMin = Vector2.zero;
+                    rootRect.offsetMax = Vector2.zero;
+                }
+                else
+                {
+                    rootRect.anchorMin = new Vector2(0.5f, 0.5f);
+                    rootRect.anchorMax = new Vector2(0.5f, 0.5f);
+                    rootRect.anchoredPosition = Vector2.zero;
+                    if (rootRect.rect.width < 1f || rootRect.rect.height < 1f)
+                    {
+                        rootRect.sizeDelta = new Vector2(Mathf.Min(canvasSize.x, 512), Mathf.Min(canvasSize.y, 512));
+                    }
+                }
+
+                return;
+            }
+
+            instance.transform.SetParent(contentRect, false);
+            instance.transform.localPosition = Vector3.zero;
+            instance.transform.localRotation = Quaternion.identity;
+            instance.transform.localScale = Vector3.one;
+        }
+
+        private static void PrepareUiForPreview(GameObject root, Camera previewCamera, Vector2Int canvasSize)
         {
             if (root == null)
             {
@@ -410,14 +516,15 @@ namespace PrefabBoard.Editor.Services
             if (canvases.Length == 0)
             {
                 var createdCanvas = root.AddComponent<Canvas>();
-                createdCanvas.renderMode = RenderMode.WorldSpace;
+                createdCanvas.renderMode = RenderMode.ScreenSpaceCamera;
             }
 
             canvases = root.GetComponentsInChildren<Canvas>(true);
             foreach (var canvas in canvases)
             {
-                canvas.renderMode = RenderMode.WorldSpace;
-                canvas.worldCamera = null;
+                canvas.renderMode = RenderMode.ScreenSpaceCamera;
+                canvas.worldCamera = previewCamera;
+                canvas.planeDistance = 1f;
                 canvas.pixelPerfect = false;
 
                 var canvasRect = canvas.GetComponent<RectTransform>();
@@ -433,6 +540,21 @@ namespace PrefabBoard.Editor.Services
                 scaler.uiScaleMode = CanvasScaler.ScaleMode.ConstantPixelSize;
                 scaler.scaleFactor = 1f;
             }
+        }
+
+        private static bool HasRenderableUi(GameObject root)
+        {
+            if (root == null)
+            {
+                return false;
+            }
+
+            if (root.GetComponentInChildren<Graphic>(true) != null)
+            {
+                return true;
+            }
+
+            return root.GetComponentInChildren<CanvasRenderer>(true) != null;
         }
 
         private static bool ShouldApplyCanvasSizeHint(RectTransform canvasRect)
@@ -468,73 +590,5 @@ namespace PrefabBoard.Editor.Services
             return new Vector2Int(scaledWidth, scaledHeight);
         }
 
-        private static bool TryCalculateWorldBounds(GameObject root, out Bounds bounds)
-        {
-            bounds = new Bounds(Vector3.zero, Vector3.zero);
-            var hasAny = false;
-
-            var renderers = root.GetComponentsInChildren<Renderer>(true);
-            foreach (var renderer in renderers)
-            {
-                if (!hasAny)
-                {
-                    bounds = renderer.bounds;
-                    hasAny = true;
-                }
-                else
-                {
-                    bounds.Encapsulate(renderer.bounds);
-                }
-            }
-
-            var rectTransforms = root.GetComponentsInChildren<RectTransform>(true);
-            foreach (var rectTransform in rectTransforms)
-            {
-                var corners = new Vector3[4];
-                rectTransform.GetWorldCorners(corners);
-                for (var i = 0; i < corners.Length; i++)
-                {
-                    if (!hasAny)
-                    {
-                        bounds = new Bounds(corners[i], Vector3.zero);
-                        hasAny = true;
-                    }
-                    else
-                    {
-                        bounds.Encapsulate(corners[i]);
-                    }
-                }
-            }
-
-            if (!hasAny)
-            {
-                return false;
-            }
-
-            if (bounds.size.sqrMagnitude < 0.0001f)
-            {
-                bounds.Expand(1f);
-            }
-
-            return true;
-        }
-
-        private static void PositionPreviewCamera(Camera camera, Bounds bounds, float aspect)
-        {
-            var center = bounds.center;
-            var extents = bounds.extents;
-
-            var verticalHalf = extents.y;
-            var horizontalHalf = extents.x / Mathf.Max(0.01f, aspect);
-            var size = Mathf.Max(verticalHalf, horizontalHalf) * 1.15f;
-            if (size < 0.1f)
-            {
-                size = 0.5f;
-            }
-
-            camera.orthographicSize = size;
-            camera.transform.position = center + Vector3.back * 10f;
-            camera.transform.rotation = Quaternion.LookRotation(Vector3.forward, Vector3.up);
-        }
     }
 }

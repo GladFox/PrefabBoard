@@ -1,8 +1,8 @@
 ﻿# Active Context
 
 ## Текущие задачи
-1. Перенести action-кнопку режима preview в правый нижний блок карточки.
-2. Исправить пустой серый рендер UI preview после добавления режимов холста.
+1. Починить отсутствие UI-рендера (серый квадрат) в preview карточек.
+2. Стабилизировать pipeline рендера через выделенный preview rig.
 3. Зафиксировать update в git.
 
 ## Последние изменения
@@ -19,8 +19,12 @@
   - реализованы стратегии размеров холста `Resolution`, `Control Size`, `Auto`;
   - `Auto` выбирает `Resolution` для stretch-to-screen rect, иначе `Control Size`;
   - инвалидация удаляет все кэш-варианты по `prefabGuid`.
-  - стабилизирована подготовка canvas для рендера: не перезаписываются anchors/pivot/position;
-  - добавлена нормализация `CanvasScaler` в `ConstantPixelSize`, чтобы убрать пустой серый рендер.
+  - UI preview переведён на `ScreenSpaceCamera` rig:
+    - отдельная preview camera
+    - отдельный canvas
+    - `Content` контейнер с инстансом prefab
+  - все canvases инстанса принудительно переводятся в `ScreenSpaceCamera`, с нормализацией `CanvasScaler`;
+  - удалён world-space bounds framing для UI preview.
 
 ## Следующие шаги
 1. Ручной smoke-test в Unity Editor на UI prefab с фиксированным размером и full-stretch.

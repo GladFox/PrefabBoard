@@ -96,6 +96,10 @@ Zoom-to-cursor реализован через фиксацию точки по�
 - `Control Size`: размер холста берётся из `item.size` (с fallback на размер `RectTransform`)
 
 Preview кэшируется по ключу `prefabGuid + mode + canvasSize`.
+UI preview рендерится через временный rig в preview scene:
+- `Camera`
+- `ScreenSpaceCamera Canvas`
+- `Content` контейнер, в который инстанцируется prefab
 
 ## Persistence and Undo
 Изменения данных выполняются через:
