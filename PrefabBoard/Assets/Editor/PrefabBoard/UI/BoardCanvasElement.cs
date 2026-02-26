@@ -37,6 +37,7 @@ namespace PrefabBoard.Editor.UI
         private Vector2 _dragWorldStart;
         private Rect _dragGroupRectStart;
         private string _draggingGroupId;
+        private string _dragPrimaryItemId;
         private bool _spacePressed;
         private bool _pendingPreview;
         private bool _previewInvalidationSubscribed;
@@ -392,6 +393,14 @@ namespace PrefabBoard.Editor.UI
 
             if (_mode == Mode.DragItems)
             {
+                if (IsOutsideCanvas(mouse) && TryStartExternalDragFromCurrentDrag())
+                {
+                    ClearDragState();
+                    RefreshVisualState();
+                    evt.StopPropagation();
+                    return;
+                }
+
                 var delta = world - _dragWorldStart;
                 foreach (var pair in _dragStartItemPos)
                 {
@@ -544,6 +553,7 @@ namespace PrefabBoard.Editor.UI
 
             _mode = Mode.DragItems;
             _pointerId = evt.pointerId;
+            _dragPrimaryItemId = card.ItemId;
             var pointerOnCard = new Vector2(evt.localPosition.x, evt.localPosition.y);
             var canvasPointer = card.ChangeCoordinatesTo(this, pointerOnCard);
             _dragWorldStart = ScreenToWorld(new Vector2(canvasPointer.x, canvasPointer.y));
@@ -564,11 +574,7 @@ namespace PrefabBoard.Editor.UI
         {
             var item = FindItem(card.ItemId);
             if (item == null) return;
-            if (!AssetGuidUtils.TryLoadAssetByGuid<UnityEngine.Object>(item.prefabGuid, out var asset) || asset == null) return;
-
-            DragAndDrop.PrepareStartDrag();
-            DragAndDrop.objectReferences = new[] { asset };
-            DragAndDrop.StartDrag(asset.name);
+            StartExternalDrag(item);
         }
 
         private void OnCardContextMenu(PrefabCardElement card, ContextualMenuPopulateEvent evt)
@@ -980,10 +986,67 @@ namespace PrefabBoard.Editor.UI
             _mode = Mode.None;
             _pointerId = -1;
             _draggingGroupId = null;
+            _dragPrimaryItemId = null;
             _dragStartItemPos.Clear();
             _dragStartGroupItemPos.Clear();
             _selectionOverlay.SetVisible(false);
             HideDragGhost();
+        }
+
+        private bool TryStartExternalDragFromCurrentDrag()
+        {
+            if (_board == null)
+            {
+                return false;
+            }
+
+            var primary = !string.IsNullOrEmpty(_dragPrimaryItemId) ? FindItem(_dragPrimaryItemId) : null;
+            if (primary != null && StartExternalDrag(primary))
+            {
+                return true;
+            }
+
+            foreach (var kv in _dragStartItemPos)
+            {
+                var item = FindItem(kv.Key);
+                if (item != null && StartExternalDrag(item))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static bool StartExternalDrag(BoardItemData item)
+        {
+            if (item == null)
+            {
+                return false;
+            }
+
+            if (!AssetGuidUtils.TryLoadAssetByGuid<GameObject>(item.prefabGuid, out var prefabAsset) || prefabAsset == null)
+            {
+                return false;
+            }
+
+            DragAndDrop.PrepareStartDrag();
+            DragAndDrop.objectReferences = new UnityEngine.Object[] { prefabAsset };
+            var path = AssetDatabase.GetAssetPath(prefabAsset);
+            if (!string.IsNullOrEmpty(path))
+            {
+                DragAndDrop.paths = new[] { path };
+            }
+            DragAndDrop.StartDrag(prefabAsset.name);
+            return true;
+        }
+
+        private bool IsOutsideCanvas(Vector2 localMouse)
+        {
+            return localMouse.x < 0f ||
+                   localMouse.y < 0f ||
+                   localMouse.x > contentRect.width ||
+                   localMouse.y > contentRect.height;
         }
 
         private void UpdateDragGhost(Vector2 mouseScreen)

@@ -81,6 +81,7 @@ Zoom-to-cursor реализован через фиксацию точки по�
 ## Interaction Contract
 - `LMB drag` на карточке: перемещение по доске
 - `Ctrl+LMB` на карточке: внешний drag в Scene/Hierarchy
+- `LMB drag` за границы окна PrefabBoard: внешний drag в Scene/Hierarchy (создание instance prefab)
 - `MMB` или `Space + LMB`: pan
 - `Mouse wheel`: zoom to cursor
 - `Home` в toolbar: reset view (`pan=0`, `zoom=1`)

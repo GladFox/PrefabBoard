@@ -8,6 +8,10 @@
 3. Обновить документацию и зафиксировать изменения в git.
 
 ## Последние изменения (текущая сессия)
+- Добавлен drag-out workflow из доски в Scene/Hierarchy:
+  - при `LMB drag` карточки за пределы Canvas запускается `DragAndDrop` prefab-asset;
+  - если префаб отсутствует/не резолвится, внешний drag не стартует;
+  - существующий `Ctrl+LMB` shortcut внешнего drag сохранён.
 - Исправлен источник resolution для stretch-элементов:
   - если `PreviewRigSettings.rigSource = PrefabTemplate` и в rig есть `CanvasScaler`, используется `CanvasScaler.referenceResolution`;
   - это же resolution теперь используется и для размера карточки, и для preview canvas size.
