@@ -1,6 +1,6 @@
 ﻿.pb-toolbar {
     flex-direction: row;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     align-items: center;
     gap: 6px;
     padding-left: 8px;

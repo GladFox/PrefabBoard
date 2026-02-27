@@ -50,7 +50,7 @@ MonoBehaviour:
     zOrder: 0
   viewSettings:
     gridEnabled: 1
-    snapEnabled: 0
+    snapEnabled: 1
     gridStep: 64
     minZoom: 0.2
     maxZoom: 2

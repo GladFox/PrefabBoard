@@ -65,8 +65,8 @@ Editor-only инструмент `Prefab Board` на Unity UI Toolkit:
 - `color`, `zOrder`
 
 ### Board Discovery
-- Каждая доска хранится отдельным файлом в `Assets/Editor/PrefabBoards/Boards/*.asset`.
-- Список досок строится через поиск `t:PrefabBoardAsset` в папке `Boards`.
+- Каждая доска хранится отдельным файлом (`PrefabBoardAsset`), по умолчанию создаётся в `Assets/Editor/PrefabBoards/Boards/*.asset`.
+- Список досок в UI строится через поиск `t:PrefabBoardAsset` по всему проекту (не только по одной папке).
 - Последняя открытая доска хранится локально в `EditorPrefs` (`PrefabBoard.LastOpenedBoardId`), а не в shared asset.
 
 ## Coordinate Contract

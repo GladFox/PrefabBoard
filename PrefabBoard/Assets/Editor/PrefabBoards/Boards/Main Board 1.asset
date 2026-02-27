@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a31dfbfe8a8e2f144b89955755cd720c, type: 3}
   m_Name: Main Board 1
   m_EditorClassIdentifier: Assembly-CSharp-Editor::PrefabBoard.Editor.Data.PrefabBoardAsset
-  boardId: 53d9512aec92466dae2ecc1ff780703d
+  boardId: a4344736f33b45a08015da8592592d9c
   boardName: Main Board
   pan: {x: 0, y: 0}
   zoom: 1
@@ -20,7 +20,7 @@ MonoBehaviour:
   groups: []
   viewSettings:
     gridEnabled: 1
-    snapEnabled: 1
+    snapEnabled: 0
     gridStep: 64
     minZoom: 0.02
     maxZoom: 2

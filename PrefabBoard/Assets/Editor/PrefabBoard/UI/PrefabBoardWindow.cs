@@ -53,6 +53,16 @@ namespace PrefabBoard.Editor.UI
             LoadData();
         }
 
+        private void OnFocus()
+        {
+            if (_toolbar == null || _canvas == null || _outline == null)
+            {
+                return;
+            }
+
+            RefreshBindings();
+        }
+
         private void BuildUi()
         {
             rootVisualElement.Clear();
@@ -127,7 +137,6 @@ namespace PrefabBoard.Editor.UI
             selectedIndex = Mathf.Clamp(selectedIndex, 0, Mathf.Max(0, _boards.Count - 1));
 
             _toolbar.SetBoards(_boards, selectedIndex);
-            _toolbar.SetBoardName(_currentBoard != null ? _currentBoard.boardName : string.Empty);
 
             if (_currentBoard != null)
             {
@@ -174,9 +183,7 @@ namespace PrefabBoard.Editor.UI
 
         private void OnNewBoard()
         {
-            var desiredName = string.IsNullOrWhiteSpace(_toolbar.BoardNameInput)
-                ? $"Board {_boards.Count + 1}"
-                : _toolbar.BoardNameInput.Trim();
+            var desiredName = $"Board {_boards.Count + 1}";
 
             _currentBoard = BoardRepository.CreateBoard(desiredName);
             RefreshBindings();

@@ -10,7 +10,6 @@ namespace PrefabBoard.Editor.UI
     public sealed class BoardToolbarElement : VisualElement
     {
         private readonly PopupField<string> _boardPopup;
-        private readonly TextField _boardNameField;
         private readonly ToolbarSearchField _searchField;
         private readonly Toggle _gridToggle;
         private readonly Toggle _snapToggle;
@@ -23,8 +22,6 @@ namespace PrefabBoard.Editor.UI
         public event Action<bool> GridToggled;
         public event Action<bool> SnapToggled;
 
-        public string BoardNameInput => _boardNameField.value;
-
         public BoardToolbarElement()
         {
             AddToClassList("pb-toolbar");
@@ -32,12 +29,6 @@ namespace PrefabBoard.Editor.UI
             _boardPopup = new PopupField<string>("Board", new List<string> { "No Boards" }, 0);
             _boardPopup.style.minWidth = 200f;
             _boardPopup.RegisterValueChangedCallback(OnBoardPopupChanged);
-
-            _boardNameField = new TextField("Name")
-            {
-                value = string.Empty
-            };
-            _boardNameField.style.width = 180f;
 
             var newBoardButton = new Button(() => NewBoardRequested?.Invoke()) { text = "New" };
 
@@ -53,7 +44,6 @@ namespace PrefabBoard.Editor.UI
 
             Add(_boardPopup);
             Add(newBoardButton);
-            Add(_boardNameField);
             Add(_searchField);
             Add(_gridToggle);
             Add(_snapToggle);
@@ -82,11 +72,6 @@ namespace PrefabBoard.Editor.UI
             _boardPopup.SetValueWithoutNotify(_boardNames[selectedIndex]);
         }
 
-        public void SetBoardName(string boardName)
-        {
-            _boardNameField.SetValueWithoutNotify(boardName ?? string.Empty);
-        }
-
         public void SetGridSnap(bool gridEnabled, bool snapEnabled)
         {
             _gridToggle.SetValueWithoutNotify(gridEnabled);
@@ -95,7 +80,7 @@ namespace PrefabBoard.Editor.UI
 
         private void OnBoardPopupChanged(ChangeEvent<string> evt)
         {
-            var index = _boardNames.IndexOf(evt.newValue);
+            var index = _boardPopup.index;
             if (index >= 0)
             {
                 BoardSelectionChanged?.Invoke(index);

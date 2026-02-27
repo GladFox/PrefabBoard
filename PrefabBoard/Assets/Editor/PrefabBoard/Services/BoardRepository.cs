@@ -27,7 +27,7 @@ namespace PrefabBoard.Editor.Services
             EnsureStorage();
 
             var result = new List<PrefabBoardAsset>();
-            var guids = AssetDatabase.FindAssets("t:PrefabBoardAsset", new[] { BoardsFolder });
+            var guids = AssetDatabase.FindAssets("t:PrefabBoardAsset");
             foreach (var guid in guids)
             {
                 var path = AssetDatabase.GUIDToAssetPath(guid);
