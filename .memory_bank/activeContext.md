@@ -11,9 +11,19 @@
 6. Добавить resize групп и найти/исправить причину, почему drag групп не срабатывает.
 7. Добавить горячие клавиши undo/redo (`Ctrl+Z`, `Ctrl+Y`) для отката изменений позиций.
 8. Добавить правую панель списка (`Anchors` + `Elements`) с фокусом по клику.
-9. Обновить документацию и зафиксировать изменения в git.
+9. Перевести multi-board хранение на полностью отдельные board asset-файлы без shared списка в одном asset.
+10. Обновить документацию и зафиксировать изменения в git.
 
 ## Последние изменения (текущая сессия)
+- Multi-board хранение переведено на board-per-file workflow:
+  - `BoardRepository` больше не использует `BoardLibraryAsset.boards` как источник списка;
+  - список досок строится через `AssetDatabase.FindAssets("t:PrefabBoardAsset", BoardsFolder)`;
+  - создание/дублирование/удаление доски работают напрямую с отдельными `*.asset` файлами в `Assets/Editor/PrefabBoards/Boards`.
+- `last opened board` переведён из shared asset в `EditorPrefs` (`PrefabBoard.LastOpenedBoardId`), чтобы переключение досок не писало общий файл.
+- `PrefabBoardWindow` переведён на новую модель:
+  - хранит runtime-список `_boards`;
+  - использует `BoardRepository.GetAllBoards()` и `GetLastOrFirstBoard(IReadOnlyList<...>)`;
+  - операции `New/Duplicate/Delete/Switch` работают без модификации общего списка в `BoardLibrary.asset`.
 - Группы переведены в режим «anchors»:
   - убран `Add To Group` из контекстного меню карточки;
   - создание группы больше не перепривязывает selected карточки;
@@ -134,16 +144,15 @@
 - Добавлены fallback'и для `Image` без sprite и world-space fallback pipeline.
 
 ## Следующие шаги
-1. В Unity проверить drag группы за заголовок и по рамке (через canvas hit-test).
-2. Проверить resize группы всеми handle-направлениями и минимальные размеры.
-3. Проверить `Ctrl+Z/Ctrl+Y` для move item / move group / resize group (без отката pan/zoom камеры).
-4. Проверить правую панель: секции `Anchors`/`Elements`, фокус item и frame group.
-5. Отдельно спроектировать optional-режим «приклеивания» карточки к верхней группе + правило запрета пересечений групп.
+1. В Unity проверить collaborative сценарий: параллельные изменения разных board `.asset` без конфликтов в shared library файле.
+2. Проверить `New/Duplicate/Delete/Switch` после перехода на `AssetDatabase.FindAssets`.
+3. Проверить drag/resize/undo и outline smoke после рефактора репозитория.
+4. Отдельно спроектировать optional-режим «приклеивания» карточки к верхней группе + правило запрета пересечений групп.
 
 ## План (REQUIREMENTS_OWNER)
-1. Внести resize handles в `GroupFrameElement` и режим resize в `BoardCanvasElement`.
-2. Добавить keyboard undo/redo и подписку на `Undo.undoRedoPerformed`.
-3. Добавить правую панель outline и связать её с API фокуса Canvas.
+1. Перевести репозиторий досок на обнаружение отдельных board asset-файлов.
+2. Убрать зависимость окна от `BoardLibraryAsset.boards`.
+3. Хранить `last opened board` локально в `EditorPrefs`.
 4. Синхронизировать README/Memory Bank и закоммитить.
 
 ## Стратегия (ARCHITECT)
@@ -151,11 +160,13 @@
 - Для undo/redo использовать нативный Unity Undo pipeline без собственного стека операций.
 - Для drag/resize группы приоритизировать canvas-level hit-testing как более стабильный источник pointer interaction.
 - Для правой панели использовать однонаправленный поток: `Canvas -> событие BoardDataChanged -> Outline.Rebuild()`.
+- Для совместной работы не хранить динамический список досок в одном shared asset; каждая доска должна быть самостоятельным файлом.
 
 ## REVIEWER checklist
 - Группы двигаются и ресайзятся; `group.rect` обновляется корректно.
 - Undo/redo работает для изменения позиций/размеров после drag операций и не откатывает camera-only actions.
 - Правая панель отображает `Anchors`/`Elements` и корректно фокусирует canvas.
+- Multi-board операции не требуют записи в общий список досок в одном asset.
 - Документация и Memory Bank синхронизированы.
 
 ## QA_TESTER заметки

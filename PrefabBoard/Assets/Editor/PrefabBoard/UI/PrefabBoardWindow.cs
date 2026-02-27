@@ -11,7 +11,7 @@ namespace PrefabBoard.Editor.UI
     {
         private const string StylePath = "Assets/Editor/PrefabBoard/Styles/PrefabBoard.uss";
 
-        private BoardLibraryAsset _library;
+        private List<PrefabBoardAsset> _boards = new List<PrefabBoardAsset>();
         private PrefabBoardAsset _currentBoard;
 
         private BoardToolbarElement _toolbar;
@@ -77,30 +77,39 @@ namespace PrefabBoard.Editor.UI
 
         private void LoadData()
         {
-            _library = BoardRepository.LoadOrCreateLibrary();
-            _currentBoard = BoardRepository.GetLastOrFirstBoard(_library);
+            BoardRepository.EnsureStorage();
+            ReloadBoards();
+            if (_boards.Count == 0)
+            {
+                var created = BoardRepository.CreateBoard("Main Board");
+                if (created != null)
+                {
+                    _boards.Add(created);
+                }
+            }
+
+            _currentBoard = BoardRepository.GetLastOrFirstBoard(_boards);
             RefreshBindings();
         }
 
         private void RefreshBindings()
         {
-            if (_library == null)
+            ReloadBoards();
+            if (_boards.Count == 0)
             {
-                return;
+                _currentBoard = BoardRepository.CreateBoard("Main Board");
+                ReloadBoards();
             }
 
-            CleanupNullBoards();
-
-            var boards = _library.boards;
-            if (_currentBoard == null && boards.Count > 0)
+            if (_currentBoard == null && _boards.Count > 0)
             {
-                _currentBoard = boards[0];
+                _currentBoard = _boards[0];
             }
 
-            var selectedIndex = _currentBoard != null ? boards.IndexOf(_currentBoard) : 0;
-            selectedIndex = Mathf.Clamp(selectedIndex, 0, Mathf.Max(0, boards.Count - 1));
+            var selectedIndex = _currentBoard != null ? _boards.IndexOf(_currentBoard) : 0;
+            selectedIndex = Mathf.Clamp(selectedIndex, 0, Mathf.Max(0, _boards.Count - 1));
 
-            _toolbar.SetBoards(boards, selectedIndex);
+            _toolbar.SetBoards(_boards, selectedIndex);
             _toolbar.SetBoardName(_currentBoard != null ? _currentBoard.boardName : string.Empty);
 
             if (_currentBoard != null)
@@ -120,39 +129,34 @@ namespace PrefabBoard.Editor.UI
 
         private void OnBoardSelectionChanged(int index)
         {
-            if (_library == null || index < 0 || index >= _library.boards.Count)
+            if (index < 0 || index >= _boards.Count)
             {
                 return;
             }
 
-            _currentBoard = _library.boards[index];
-            BoardRepository.SetLastOpenedBoard(_library, _currentBoard);
+            _currentBoard = _boards[index];
+            BoardRepository.SetLastOpenedBoard(_currentBoard);
             RefreshBindings();
         }
 
         private void OnNewBoard()
         {
-            if (_library == null)
-            {
-                return;
-            }
-
             var desiredName = string.IsNullOrWhiteSpace(_toolbar.BoardNameInput)
-                ? $"Board {_library.boards.Count + 1}"
+                ? $"Board {_boards.Count + 1}"
                 : _toolbar.BoardNameInput.Trim();
 
-            _currentBoard = BoardRepository.CreateBoard(_library, desiredName);
+            _currentBoard = BoardRepository.CreateBoard(desiredName);
             RefreshBindings();
         }
 
         private void OnDuplicateBoard()
         {
-            if (_library == null || _currentBoard == null)
+            if (_currentBoard == null)
             {
                 return;
             }
 
-            _currentBoard = BoardRepository.DuplicateBoard(_library, _currentBoard);
+            _currentBoard = BoardRepository.DuplicateBoard(_currentBoard);
             RefreshBindings();
         }
 
@@ -177,7 +181,7 @@ namespace PrefabBoard.Editor.UI
 
         private void OnDeleteBoard()
         {
-            if (_library == null || _currentBoard == null)
+            if (_currentBoard == null)
             {
                 return;
             }
@@ -193,26 +197,19 @@ namespace PrefabBoard.Editor.UI
                 return;
             }
 
-            BoardRepository.DeleteBoard(_library, _currentBoard);
-            _currentBoard = BoardRepository.GetLastOrFirstBoard(_library);
+            BoardRepository.DeleteBoard(_currentBoard);
+            ReloadBoards();
+            _currentBoard = BoardRepository.GetLastOrFirstBoard(_boards);
             RefreshBindings();
         }
 
-        private void CleanupNullBoards()
+        private void ReloadBoards()
         {
-            if (_library == null)
+            _boards = BoardRepository.GetAllBoards();
+            if (_currentBoard != null && !_boards.Contains(_currentBoard))
             {
-                return;
+                _currentBoard = null;
             }
-
-            _library.boards.RemoveAll(board => board == null);
-            if (_library.boards.Count == 0)
-            {
-                _currentBoard = BoardRepository.CreateBoard(_library, "Main Board");
-            }
-
-            EditorUtility.SetDirty(_library);
-            AssetDatabase.SaveAssets();
         }
     }
 }

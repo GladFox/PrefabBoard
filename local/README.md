@@ -10,14 +10,13 @@ Editor-only инструмент `Prefab Board` на Unity UI Toolkit:
 - группы (frames)
 - drag&drop `Project -> Canvas`
 - внешний drag карточки в `Scene/Hierarchy` для инстанса префаба
-- поддержка нескольких досок через библиотеку
+- поддержка нескольких досок через отдельные board-файлы (`*.asset`)
 
 ## Repository Structure
 - `PrefabBoard/Assets/Editor/PrefabBoard/Data`
   - `PrefabBoardAsset`
   - `BoardItemData`
   - `BoardGroupData`
-  - `BoardLibraryAsset`
   - `BoardViewSettings`
   - `PreviewRigSettingsAsset`
 - `PrefabBoard/Assets/Editor/PrefabBoard/Services`
@@ -64,10 +63,10 @@ Editor-only инструмент `Prefab Board` на Unity UI Toolkit:
 - `rect` (world)
 - `color`, `zOrder`
 
-### BoardLibraryAsset
-Менеджер досок:
-- `boards`
-- `lastOpenedBoardId`
+### Board Discovery
+- Каждая доска хранится отдельным файлом в `Assets/Editor/PrefabBoards/Boards/*.asset`.
+- Список досок строится через поиск `t:PrefabBoardAsset` в папке `Boards`.
+- Последняя открытая доска хранится локально в `EditorPrefs` (`PrefabBoard.LastOpenedBoardId`), а не в shared asset.
 
 ## Coordinate Contract
 Сохранение позиций в world, навигация через `pan`/`zoom`:

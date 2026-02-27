@@ -1,6 +1,7 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using PrefabBoard.Editor.Data;
 using UnityEditor;
 using UnityEngine;
@@ -13,58 +14,70 @@ namespace PrefabBoard.Editor.Services
         public const string BoardsFolder = RootFolder + "/Boards";
         public const string LibraryPath = RootFolder + "/BoardLibrary.asset";
 
-        public static BoardLibraryAsset LoadOrCreateLibrary()
+        private const string LastOpenedBoardIdEditorPrefKey = "PrefabBoard.LastOpenedBoardId";
+
+        public static void EnsureStorage()
         {
             EnsureFolder("Assets", "Editor");
             EnsureFolder("Assets/Editor", "PrefabBoards");
             EnsureFolder(RootFolder, "Boards");
-
-            var library = AssetDatabase.LoadAssetAtPath<BoardLibraryAsset>(LibraryPath);
-            if (library == null)
-            {
-                library = ScriptableObject.CreateInstance<BoardLibraryAsset>();
-                AssetDatabase.CreateAsset(library, LibraryPath);
-                AssetDatabase.SaveAssets();
-            }
-
-            CleanupNullBoards(library);
-            if (library.boards.Count == 0)
-            {
-                var board = CreateBoard(library, "Main Board");
-                library.lastOpenedBoardId = board != null ? board.boardId : string.Empty;
-                EditorUtility.SetDirty(library);
-                AssetDatabase.SaveAssets();
-            }
-
-            return library;
         }
 
-        public static PrefabBoardAsset GetLastOrFirstBoard(BoardLibraryAsset library)
+        public static List<PrefabBoardAsset> GetAllBoards()
         {
-            if (library == null)
-            {
-                return null;
-            }
+            EnsureStorage();
 
-            CleanupNullBoards(library);
-            if (!string.IsNullOrEmpty(library.lastOpenedBoardId))
+            var result = new List<PrefabBoardAsset>();
+            var guids = AssetDatabase.FindAssets("t:PrefabBoardAsset", new[] { BoardsFolder });
+            foreach (var guid in guids)
             {
-                var last = library.boards.Find(board => board != null && board.boardId == library.lastOpenedBoardId);
-                if (last != null)
+                var path = AssetDatabase.GUIDToAssetPath(guid);
+                if (string.IsNullOrEmpty(path))
                 {
-                    return last;
+                    continue;
+                }
+
+                var board = AssetDatabase.LoadAssetAtPath<PrefabBoardAsset>(path);
+                if (board != null)
+                {
+                    result.Add(board);
                 }
             }
 
-            return library.boards.Count > 0 ? library.boards[0] : null;
+            result = result
+                .OrderBy(board => board != null ? board.boardName : string.Empty, StringComparer.OrdinalIgnoreCase)
+                .ThenBy(board => board != null ? board.boardId : string.Empty, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            return result;
         }
 
-        public static PrefabBoardAsset CreateBoard(BoardLibraryAsset library, string boardName)
+        public static PrefabBoardAsset GetLastOrFirstBoard(IReadOnlyList<PrefabBoardAsset> boards)
         {
-            if (library == null)
+            if (boards == null || boards.Count == 0)
             {
                 return null;
             }
+
+            var lastId = EditorPrefs.GetString(LastOpenedBoardIdEditorPrefKey, string.Empty);
+            if (!string.IsNullOrEmpty(lastId))
+            {
+                for (var i = 0; i < boards.Count; i++)
+                {
+                    var board = boards[i];
+                    if (board != null && board.boardId == lastId)
+                    {
+                        return board;
+                    }
+                }
+            }
+
+            return boards[0];
+        }
+
+        public static PrefabBoardAsset CreateBoard(string boardName)
+        {
+            EnsureStorage();
 
             var board = ScriptableObject.CreateInstance<PrefabBoardAsset>();
             board.boardId = Guid.NewGuid().ToString("N");
@@ -79,21 +92,20 @@ namespace PrefabBoard.Editor.Services
             var path = AssetDatabase.GenerateUniqueAssetPath($"{BoardsFolder}/{safeName}.asset");
             AssetDatabase.CreateAsset(board, path);
 
-            library.boards.Add(board);
-            library.lastOpenedBoardId = board.boardId;
-
-            EditorUtility.SetDirty(library);
             EditorUtility.SetDirty(board);
             AssetDatabase.SaveAssets();
+            SetLastOpenedBoard(board);
             return board;
         }
 
-        public static PrefabBoardAsset DuplicateBoard(BoardLibraryAsset library, PrefabBoardAsset source)
+        public static PrefabBoardAsset DuplicateBoard(PrefabBoardAsset source)
         {
-            if (library == null || source == null)
+            if (source == null)
             {
                 return null;
             }
+
+            EnsureStorage();
 
             var duplicate = ScriptableObject.CreateInstance<PrefabBoardAsset>();
             EditorJsonUtility.FromJsonOverwrite(EditorJsonUtility.ToJson(source), duplicate);
@@ -139,12 +151,9 @@ namespace PrefabBoard.Editor.Services
             var path = AssetDatabase.GenerateUniqueAssetPath($"{BoardsFolder}/{safeName}.asset");
             AssetDatabase.CreateAsset(duplicate, path);
 
-            library.boards.Add(duplicate);
-            library.lastOpenedBoardId = duplicate.boardId;
-
-            EditorUtility.SetDirty(library);
             EditorUtility.SetDirty(duplicate);
             AssetDatabase.SaveAssets();
+            SetLastOpenedBoard(duplicate);
             return duplicate;
         }
 
@@ -159,43 +168,42 @@ namespace PrefabBoard.Editor.Services
             EditorUtility.SetDirty(board);
         }
 
-        public static void DeleteBoard(BoardLibraryAsset library, PrefabBoardAsset board)
+        public static void DeleteBoard(PrefabBoardAsset board)
         {
-            if (library == null || board == null)
+            if (board == null)
             {
                 return;
             }
 
-            library.boards.Remove(board);
             var boardPath = AssetDatabase.GetAssetPath(board);
             if (!string.IsNullOrEmpty(boardPath))
             {
                 AssetDatabase.DeleteAsset(boardPath);
             }
 
-            if (library.boards.Count == 0)
+            AssetDatabase.SaveAssets();
+
+            var boards = GetAllBoards();
+            if (boards.Count == 0)
             {
-                var fallbackBoard = CreateBoard(library, "Main Board");
-                library.lastOpenedBoardId = fallbackBoard != null ? fallbackBoard.boardId : string.Empty;
+                var fallbackBoard = CreateBoard("Main Board");
+                SetLastOpenedBoard(fallbackBoard);
             }
             else
             {
-                library.lastOpenedBoardId = library.boards[0] != null ? library.boards[0].boardId : string.Empty;
+                SetLastOpenedBoard(boards[0]);
             }
-
-            EditorUtility.SetDirty(library);
-            AssetDatabase.SaveAssets();
         }
 
-        public static void SetLastOpenedBoard(BoardLibraryAsset library, PrefabBoardAsset board)
+        public static void SetLastOpenedBoard(PrefabBoardAsset board)
         {
-            if (library == null)
+            if (board == null || string.IsNullOrEmpty(board.boardId))
             {
+                EditorPrefs.DeleteKey(LastOpenedBoardIdEditorPrefKey);
                 return;
             }
 
-            library.lastOpenedBoardId = board != null ? board.boardId : string.Empty;
-            EditorUtility.SetDirty(library);
+            EditorPrefs.SetString(LastOpenedBoardIdEditorPrefKey, board.boardId);
         }
 
         private static void EnsureFolder(string parent, string folderName)
@@ -205,16 +213,6 @@ namespace PrefabBoard.Editor.Services
             {
                 AssetDatabase.CreateFolder(parent, folderName);
             }
-        }
-
-        private static void CleanupNullBoards(BoardLibraryAsset library)
-        {
-            if (library == null)
-            {
-                return;
-            }
-
-            library.boards.RemoveAll(board => board == null);
         }
 
         private static string SanitizeFileName(string value)
