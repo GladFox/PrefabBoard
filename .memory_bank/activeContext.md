@@ -12,9 +12,13 @@
 7. Добавить горячие клавиши undo/redo (`Ctrl+Z`, `Ctrl+Y`) для отката изменений позиций.
 8. Добавить правую панель списка (`Anchors` + `Elements`) с фокусом по клику.
 9. Перевести multi-board хранение на полностью отдельные board asset-файлы без shared списка в одном asset.
-10. Обновить документацию и зафиксировать изменения в git.
+10. Подготовить релиз: добавить версию, release notes, commit/push.
 
 ## Последние изменения (текущая сессия)
+- Подготовлен релизный baseline:
+  - добавлен файл версии `VERSION` со значением `0.1.0`;
+  - добавлен `RELEASE_NOTES.md` для `v0.1.0`;
+  - в `local/README.md` статус дополнен текущей версией `v0.1.0`.
 - Multi-board хранение переведено на board-per-file workflow:
   - `BoardRepository` больше не использует `BoardLibraryAsset.boards` как источник списка;
   - список досок строится через `AssetDatabase.FindAssets("t:PrefabBoardAsset", BoardsFolder)`;

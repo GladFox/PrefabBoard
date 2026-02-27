@@ -1,7 +1,7 @@
 ﻿# PrefabBoard Architecture
 
 ## Status
-MVP implementation in progress (`feat/tz-alignment`).
+MVP implementation in progress (`feat/tz-alignment`). Current version: `v0.1.0`.
 
 ## Scope
 Editor-only инструмент `Prefab Board` на Unity UI Toolkit:

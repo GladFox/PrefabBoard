@@ -71,6 +71,10 @@
   - список досок строится через поиск `t:PrefabBoardAsset` в `Assets/Editor/PrefabBoards/Boards`;
   - операции `Create/Duplicate/Delete` работают напрямую с отдельными `.asset` досками;
   - `last opened board` хранится локально в `EditorPrefs` (`PrefabBoard.LastOpenedBoardId`), без записи в shared library asset.
+- Подготовлен релиз `v0.1.0`:
+  - добавлен файл `VERSION` (`0.1.0`);
+  - добавлен `RELEASE_NOTES.md` с суммарными изменениями;
+  - архитектурный README содержит текущую версию.
 
 ## Известные проблемы
 - В проблемном кейсе пользователя preview всё ещё может показывать пустой/серый результат; причина пока не подтверждена.
