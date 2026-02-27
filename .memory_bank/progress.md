@@ -1,26 +1,26 @@
 # Progress
 
-## Что работает
-- PrefabBoard MVP работает в EditorWindow (canvas, pan/zoom, карточки, группы, drag&drop).
-- Multi-board работает по модели board-per-file (`PrefabBoardAsset` как отдельные `.asset`).
-- Открытие конкретной доски из инспектора `PrefabBoardAsset` через кнопку `Open`.
-- Правая панель `Board Items` содержит кнопку `Home` и фокус по `Anchors`/`Elements`.
-- Создание групп доступно через RMB context menu на пустом canvas (`Create Group`).
-- Переименование групп доступно через context menu группы (`Rename Group`).
-- Group drag/resize и undo/redo для элементов/групп остаются в рабочем потоке.
-- Preview pipeline для uGUI продолжает работать через `PreviewCache`.
+## Р§С‚Рѕ СЂР°Р±РѕС‚Р°РµС‚
+- PrefabBoard MVP СЂР°Р±РѕС‚Р°РµС‚ РІ EditorWindow (canvas, pan/zoom, РєР°СЂС‚РѕС‡РєРё, РіСЂСѓРїРїС‹, drag&drop).
+- Multi-board СЂР°Р±РѕС‚Р°РµС‚ РїРѕ РјРѕРґРµР»Рё board-per-file (`PrefabBoardAsset` РєР°Рє РѕС‚РґРµР»СЊРЅС‹Рµ `.asset`).
+- РћС‚РєСЂС‹С‚РёРµ РєРѕРЅРєСЂРµС‚РЅРѕР№ РґРѕСЃРєРё РёР· РёРЅСЃРїРµРєС‚РѕСЂР° `PrefabBoardAsset` С‡РµСЂРµР· РєРЅРѕРїРєСѓ `Open`.
+- РџСЂР°РІР°СЏ РїР°РЅРµР»СЊ `Board Items` СЃРѕРґРµСЂР¶РёС‚ РєРЅРѕРїРєСѓ `Home` Рё С„РѕРєСѓСЃ РїРѕ `Anchors`/`Elements`.
+- РЎРѕР·РґР°РЅРёРµ РіСЂСѓРїРї РґРѕСЃС‚СѓРїРЅРѕ С‡РµСЂРµР· RMB context menu РЅР° РїСѓСЃС‚РѕРј canvas (`Create Group`).
+- РџРµСЂРµРёРјРµРЅРѕРІР°РЅРёРµ РіСЂСѓРїРї РґРѕСЃС‚СѓРїРЅРѕ С‡РµСЂРµР· context menu РіСЂСѓРїРїС‹ (`Rename Group`).
+- Group drag/resize Рё undo/redo РґР»СЏ СЌР»РµРјРµРЅС‚РѕРІ/РіСЂСѓРїРї РѕСЃС‚Р°СЋС‚СЃСЏ РІ СЂР°Р±РѕС‡РµРј РїРѕС‚РѕРєРµ.
+- Preview pipeline РґР»СЏ uGUI РїСЂРѕРґРѕР»Р¶Р°РµС‚ СЂР°Р±РѕС‚Р°С‚СЊ С‡РµСЂРµР· `PreviewCache`.
 
-## Известные проблемы
-- Полноценный автоматизированный integration-тест preview pipeline отсутствует.
-- Требуется ручной smoke-test в Unity после UI cleanup (toolbar/navigation/context menus).
-- API `TryCreateTestScene*` оставлен в коде, но принудительно отключён (возвращает `false`).
+## РР·РІРµСЃС‚РЅС‹Рµ РїСЂРѕР±Р»РµРјС‹
+- РџРѕР»РЅРѕС†РµРЅРЅС‹Р№ Р°РІС‚РѕРјР°С‚РёР·РёСЂРѕРІР°РЅРЅС‹Р№ integration-С‚РµСЃС‚ preview pipeline РѕС‚СЃСѓС‚СЃС‚РІСѓРµС‚.
+- РўСЂРµР±СѓРµС‚СЃСЏ СЂСѓС‡РЅРѕР№ smoke-test РІ Unity РїРѕСЃР»Рµ UI cleanup (toolbar/navigation/context menus).
+- API `TryCreateTestScene*` РѕСЃС‚Р°РІР»РµРЅ РІ РєРѕРґРµ, РЅРѕ РїСЂРёРЅСѓРґРёС‚РµР»СЊРЅРѕ РѕС‚РєР»СЋС‡С‘РЅ (РІРѕР·РІСЂР°С‰Р°РµС‚ `false`).
 
-## Развитие решений
-- Полностью убран legacy `BoardLibrary` артефакт из проекта.
-- Удалены пользовательские debug/test инструменты (`Preview Debug`, `Create Test Scene`).
-- Board-level операции `Duplicate/Rename/Delete` убраны из toolbar; управление этими действиями перенесено в файловый workflow.
-- Home-навигация смещена в правую панель, ближе к списку/фокусу элементов.
+## Р Р°Р·РІРёС‚РёРµ СЂРµС€РµРЅРёР№
+- РџРѕР»РЅРѕСЃС‚СЊСЋ СѓР±СЂР°РЅ legacy `BoardLibrary` Р°СЂС‚РµС„Р°РєС‚ РёР· РїСЂРѕРµРєС‚Р°.
+- РЈРґР°Р»РµРЅС‹ РїРѕР»СЊР·РѕРІР°С‚РµР»СЊСЃРєРёРµ debug/test РёРЅСЃС‚СЂСѓРјРµРЅС‚С‹ (`Preview Debug`, `Create Test Scene`).
+- Board-level РѕРїРµСЂР°С†РёРё `Duplicate/Rename/Delete` СѓР±СЂР°РЅС‹ РёР· toolbar; СѓРїСЂР°РІР»РµРЅРёРµ СЌС‚РёРјРё РґРµР№СЃС‚РІРёСЏРјРё РїРµСЂРµРЅРµСЃРµРЅРѕ РІ С„Р°Р№Р»РѕРІС‹Р№ workflow.
+- Home-РЅР°РІРёРіР°С†РёСЏ СЃРјРµС‰РµРЅР° РІ РїСЂР°РІСѓСЋ РїР°РЅРµР»СЊ, Р±Р»РёР¶Рµ Рє СЃРїРёСЃРєСѓ/С„РѕРєСѓСЃСѓ СЌР»РµРјРµРЅС‚РѕРІ.
 
-## Контроль изменений
-- last_checked_commit: ce6d571
+## РљРѕРЅС‚СЂРѕР»СЊ РёР·РјРµРЅРµРЅРёР№
+- last_checked_commit: c21443e
 - last_checked_date: 2026-02-27

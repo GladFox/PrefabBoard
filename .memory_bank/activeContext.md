@@ -1,49 +1,49 @@
 # Active Context
 
-## Текущие задачи
-1. Проверить в Unity UX после cleanup toolbar/navigation (создание/переключение досок, Home в правой панели).
-2. Проверить workflow групп: RMB Create Group, Rename Group, drag/resize, undo/redo.
-3. Проверить открытие доски из инспектора `PrefabBoardAsset` кнопкой `Open`.
-4. Подтвердить, что debug/test scene инструменты больше недоступны в меню.
+## РўРµРєСѓС‰РёРµ Р·Р°РґР°С‡Рё
+1. РџСЂРѕРІРµСЂРёС‚СЊ РІ Unity UX РїРѕСЃР»Рµ cleanup toolbar/navigation (СЃРѕР·РґР°РЅРёРµ/РїРµСЂРµРєР»СЋС‡РµРЅРёРµ РґРѕСЃРѕРє, Home РІ РїСЂР°РІРѕР№ РїР°РЅРµР»Рё).
+2. РџСЂРѕРІРµСЂРёС‚СЊ workflow РіСЂСѓРїРї: RMB Create Group, Rename Group, drag/resize, undo/redo.
+3. РџСЂРѕРІРµСЂРёС‚СЊ РѕС‚РєСЂС‹С‚РёРµ РґРѕСЃРєРё РёР· РёРЅСЃРїРµРєС‚РѕСЂР° `PrefabBoardAsset` РєРЅРѕРїРєРѕР№ `Open`.
+4. РџРѕРґС‚РІРµСЂРґРёС‚СЊ, С‡С‚Рѕ debug/test scene РёРЅСЃС‚СЂСѓРјРµРЅС‚С‹ Р±РѕР»СЊС€Рµ РЅРµРґРѕСЃС‚СѓРїРЅС‹ РІ РјРµРЅСЋ.
 
-## Последние изменения (текущая сессия)
-- Удалены legacy/debug артефакты:
-  - удалён `BoardLibraryAsset` (скрипт и `BoardLibrary.asset`);
-  - удалены меню/окна `Preview Debug` и `Create Test Scene`.
-- В `PreviewCache` публичный API создания test-сцены отключён (`Test scene rendering is disabled`).
-- В `PreviewDebugCapture` отключён runtime capture по умолчанию (`CaptureEnabled = false`).
-- В toolbar убраны операции board-level `Duplicate`, `Rename`, `Delete` и кнопка `Home`.
-- Кнопка `Home` перенесена в правую панель навигации (`BoardOutlineElement`).
-- В Canvas добавлено контекстное меню по правому клику на пустом месте: `Create Group`.
-- Для групп добавлено переименование через context menu (`Rename Group`).
-- Добавлено окно ввода текста `TextPromptWindow` для rename операций.
-- Добавлен custom inspector `PrefabBoardAssetEditor` с кнопкой `Open` для открытия конкретной доски.
-- `PrefabBoardWindow` получил `OpenBoard(PrefabBoardAsset)` и поддержку отложенного выбора доски при открытии окна.
-- Обновлены стили правой панели под кнопку `Home`.
+## РџРѕСЃР»РµРґРЅРёРµ РёР·РјРµРЅРµРЅРёСЏ (С‚РµРєСѓС‰Р°СЏ СЃРµСЃСЃРёСЏ)
+- РЈРґР°Р»РµРЅС‹ legacy/debug Р°СЂС‚РµС„Р°РєС‚С‹:
+  - СѓРґР°Р»С‘РЅ `BoardLibraryAsset` (СЃРєСЂРёРїС‚ Рё `BoardLibrary.asset`);
+  - СѓРґР°Р»РµРЅС‹ РјРµРЅСЋ/РѕРєРЅР° `Preview Debug` Рё `Create Test Scene`.
+- Р’ `PreviewCache` РїСѓР±Р»РёС‡РЅС‹Р№ API СЃРѕР·РґР°РЅРёСЏ test-СЃС†РµРЅС‹ РѕС‚РєР»СЋС‡С‘РЅ (`Test scene rendering is disabled`).
+- Р’ `PreviewDebugCapture` РѕС‚РєР»СЋС‡С‘РЅ runtime capture РїРѕ СѓРјРѕР»С‡Р°РЅРёСЋ (`CaptureEnabled = false`).
+- Р’ toolbar СѓР±СЂР°РЅС‹ РѕРїРµСЂР°С†РёРё board-level `Duplicate`, `Rename`, `Delete` Рё РєРЅРѕРїРєР° `Home`.
+- РљРЅРѕРїРєР° `Home` РїРµСЂРµРЅРµСЃРµРЅР° РІ РїСЂР°РІСѓСЋ РїР°РЅРµР»СЊ РЅР°РІРёРіР°С†РёРё (`BoardOutlineElement`).
+- Р’ Canvas РґРѕР±Р°РІР»РµРЅРѕ РєРѕРЅС‚РµРєСЃС‚РЅРѕРµ РјРµРЅСЋ РїРѕ РїСЂР°РІРѕРјСѓ РєР»РёРєСѓ РЅР° РїСѓСЃС‚РѕРј РјРµСЃС‚Рµ: `Create Group`.
+- Р”Р»СЏ РіСЂСѓРїРї РґРѕР±Р°РІР»РµРЅРѕ РїРµСЂРµРёРјРµРЅРѕРІР°РЅРёРµ С‡РµСЂРµР· context menu (`Rename Group`).
+- Р”РѕР±Р°РІР»РµРЅРѕ РѕРєРЅРѕ РІРІРѕРґР° С‚РµРєСЃС‚Р° `TextPromptWindow` РґР»СЏ rename РѕРїРµСЂР°С†РёР№.
+- Р”РѕР±Р°РІР»РµРЅ custom inspector `PrefabBoardAssetEditor` СЃ РєРЅРѕРїРєРѕР№ `Open` РґР»СЏ РѕС‚РєСЂС‹С‚РёСЏ РєРѕРЅРєСЂРµС‚РЅРѕР№ РґРѕСЃРєРё.
+- `PrefabBoardWindow` РїРѕР»СѓС‡РёР» `OpenBoard(PrefabBoardAsset)` Рё РїРѕРґРґРµСЂР¶РєСѓ РѕС‚Р»РѕР¶РµРЅРЅРѕРіРѕ РІС‹Р±РѕСЂР° РґРѕСЃРєРё РїСЂРё РѕС‚РєСЂС‹С‚РёРё РѕРєРЅР°.
+- РћР±РЅРѕРІР»РµРЅС‹ СЃС‚РёР»Рё РїСЂР°РІРѕР№ РїР°РЅРµР»Рё РїРѕРґ РєРЅРѕРїРєСѓ `Home`.
 
-## Следующие шаги
-1. Ручной smoke в Unity Editor по сценариям из DoD/текущих задач.
-2. Если понадобятся board-level операции (rename/delete), выполнять через файловый менеджмент ассетов.
-3. При следующем изменении обновить `VERSION` и `RELEASE_NOTES.md` (если планируется релизный срез).
+## РЎР»РµРґСѓСЋС‰РёРµ С€Р°РіРё
+1. Р СѓС‡РЅРѕР№ smoke РІ Unity Editor РїРѕ СЃС†РµРЅР°СЂРёСЏРј РёР· DoD/С‚РµРєСѓС‰РёС… Р·Р°РґР°С‡.
+2. Р•СЃР»Рё РїРѕРЅР°РґРѕР±СЏС‚СЃСЏ board-level РѕРїРµСЂР°С†РёРё (rename/delete), РІС‹РїРѕР»РЅСЏС‚СЊ С‡РµСЂРµР· С„Р°Р№Р»РѕРІС‹Р№ РјРµРЅРµРґР¶РјРµРЅС‚ Р°СЃСЃРµС‚РѕРІ.
+3. РџСЂРё СЃР»РµРґСѓСЋС‰РµРј РёР·РјРµРЅРµРЅРёРё РѕР±РЅРѕРІРёС‚СЊ `VERSION` Рё `RELEASE_NOTES.md` (РµСЃР»Рё РїР»Р°РЅРёСЂСѓРµС‚СЃСЏ СЂРµР»РёР·РЅС‹Р№ СЃСЂРµР·).
 
-## План (REQUIREMENTS_OWNER)
-1. Удалить неактуальные инструменты debug/test scene.
-2. Перенастроить UX панели управления доской (toolbar + navigation).
-3. Добавить rename групп и создание групп через RMB-меню.
-4. Убрать зависимость от BoardLibrary и открыть доску из инспектора ассета.
+## РџР»Р°РЅ (REQUIREMENTS_OWNER)
+1. РЈРґР°Р»РёС‚СЊ РЅРµР°РєС‚СѓР°Р»СЊРЅС‹Рµ РёРЅСЃС‚СЂСѓРјРµРЅС‚С‹ debug/test scene.
+2. РџРµСЂРµРЅР°СЃС‚СЂРѕРёС‚СЊ UX РїР°РЅРµР»Рё СѓРїСЂР°РІР»РµРЅРёСЏ РґРѕСЃРєРѕР№ (toolbar + navigation).
+3. Р”РѕР±Р°РІРёС‚СЊ rename РіСЂСѓРїРї Рё СЃРѕР·РґР°РЅРёРµ РіСЂСѓРїРї С‡РµСЂРµР· RMB-РјРµРЅСЋ.
+4. РЈР±СЂР°С‚СЊ Р·Р°РІРёСЃРёРјРѕСЃС‚СЊ РѕС‚ BoardLibrary Рё РѕС‚РєСЂС‹С‚СЊ РґРѕСЃРєСѓ РёР· РёРЅСЃРїРµРєС‚РѕСЂР° Р°СЃСЃРµС‚Р°.
 
-## Стратегия (ARCHITECT)
-- Хранение multi-board остаётся board-per-file, без shared library asset.
-- Board-level lifecycle операции не предоставляются кнопками в toolbar.
-- Контекстные действия для групп/канваса реализуются через `ContextualMenuPopulateEvent`.
+## РЎС‚СЂР°С‚РµРіРёСЏ (ARCHITECT)
+- РҐСЂР°РЅРµРЅРёРµ multi-board РѕСЃС‚Р°С‘С‚СЃСЏ board-per-file, Р±РµР· shared library asset.
+- Board-level lifecycle РѕРїРµСЂР°С†РёРё РЅРµ РїСЂРµРґРѕСЃС‚Р°РІР»СЏСЋС‚СЃСЏ РєРЅРѕРїРєР°РјРё РІ toolbar.
+- РљРѕРЅС‚РµРєСЃС‚РЅС‹Рµ РґРµР№СЃС‚РІРёСЏ РґР»СЏ РіСЂСѓРїРї/РєР°РЅРІР°СЃР° СЂРµР°Р»РёР·СѓСЋС‚СЃСЏ С‡РµСЂРµР· `ContextualMenuPopulateEvent`.
 
 ## REVIEWER checklist
-- Нет ссылок на удалённые `BoardLibraryAsset`, `PreviewDebugWindow`, `PreviewTestSceneMenu`.
-- Home доступен только в right outline.
-- В контекстном меню группы есть `Rename Group`.
-- В контекстном меню пустого canvas есть `Create Group`.
-- Инспектор `PrefabBoardAsset` содержит кнопку `Open`.
+- РќРµС‚ СЃСЃС‹Р»РѕРє РЅР° СѓРґР°Р»С‘РЅРЅС‹Рµ `BoardLibraryAsset`, `PreviewDebugWindow`, `PreviewTestSceneMenu`.
+- Home РґРѕСЃС‚СѓРїРµРЅ С‚РѕР»СЊРєРѕ РІ right outline.
+- Р’ РєРѕРЅС‚РµРєСЃС‚РЅРѕРј РјРµРЅСЋ РіСЂСѓРїРїС‹ РµСЃС‚СЊ `Rename Group`.
+- Р’ РєРѕРЅС‚РµРєСЃС‚РЅРѕРј РјРµРЅСЋ РїСѓСЃС‚РѕРіРѕ canvas РµСЃС‚СЊ `Create Group`.
+- РРЅСЃРїРµРєС‚РѕСЂ `PrefabBoardAsset` СЃРѕРґРµСЂР¶РёС‚ РєРЅРѕРїРєСѓ `Open`.
 
-## QA_TESTER заметки
-- Локальная `dotnet build PrefabBoard.sln` прошла успешно.
-- Нужна ручная проверка внутри Unity Editor.
+## QA_TESTER Р·Р°РјРµС‚РєРё
+- Р›РѕРєР°Р»СЊРЅР°СЏ `dotnet build PrefabBoard.sln` РїСЂРѕС€Р»Р° СѓСЃРїРµС€РЅРѕ.
+- РќСѓР¶РЅР° СЂСѓС‡РЅР°СЏ РїСЂРѕРІРµСЂРєР° РІРЅСѓС‚СЂРё Unity Editor.
