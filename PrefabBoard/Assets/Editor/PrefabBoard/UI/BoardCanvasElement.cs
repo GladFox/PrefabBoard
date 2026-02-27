@@ -24,7 +24,6 @@ namespace PrefabBoard.Editor.UI
         private readonly HashSet<string> _selectedItems = new HashSet<string>();
         private readonly HashSet<string> _dirtyPreviewGuids = new HashSet<string>();
         private readonly Dictionary<string, Vector2> _dragStartItemPos = new Dictionary<string, Vector2>();
-        private readonly Dictionary<string, Vector2> _dragStartGroupItemPos = new Dictionary<string, Vector2>();
         private const float MinGroupWidth = 120f;
         private const float MinGroupHeight = 90f;
 
@@ -214,7 +213,6 @@ namespace PrefabBoard.Editor.UI
         public void ResetView()
         {
             if (_board == null) return;
-            BoardUndo.Record(_board, "Reset View");
             _board.pan = Vector2.zero;
             _board.zoom = 1f;
             BoardUndo.MarkDirty(_board);
@@ -245,7 +243,7 @@ namespace PrefabBoard.Editor.UI
                 return;
             }
 
-            FrameRect(bounds.Value, "Frame Selection");
+            FrameRect(bounds.Value);
         }
 
         public void FocusItem(string itemId)
@@ -264,7 +262,7 @@ namespace PrefabBoard.Editor.UI
             _selectedItems.Clear();
             _selectedItems.Add(item.id);
             _selectedGroupId = null;
-            FrameRect(new Rect(item.position, item.size), "Focus Item");
+            FrameRect(new Rect(item.position, item.size));
         }
 
         public void FocusGroup(string groupId)
@@ -282,7 +280,7 @@ namespace PrefabBoard.Editor.UI
 
             _selectedItems.Clear();
             _selectedGroupId = group.id;
-            FrameRect(group.rect, "Focus Group");
+            FrameRect(group.rect);
         }
 
         public void CreateGroupFromSelection()
@@ -294,11 +292,6 @@ namespace PrefabBoard.Editor.UI
 
             BoardUndo.Record(_board, "Create Group");
             _board.groups.Add(group);
-            foreach (var id in _selectedItems)
-            {
-                var item = FindItem(id);
-                if (item != null) item.groupId = group.id;
-            }
             _selectedGroupId = group.id;
             BoardUndo.MarkDirty(_board);
             RebuildFromData();
@@ -307,7 +300,7 @@ namespace PrefabBoard.Editor.UI
         public Vector2 ScreenToWorld(Vector2 screen) => _board == null ? screen : (screen - _board.pan) / Mathf.Max(0.0001f, _board.zoom);
         public Vector2 WorldToScreen(Vector2 world) => _board == null ? world : world * _board.zoom + _board.pan;
 
-        private void FrameRect(Rect rect, string undoLabel)
+        private void FrameRect(Rect rect)
         {
             if (_board == null)
             {
@@ -323,7 +316,6 @@ namespace PrefabBoard.Editor.UI
             var center = rect.center;
             var screenCenter = new Vector2(contentRect.width * 0.5f, contentRect.height * 0.5f);
 
-            BoardUndo.Record(_board, undoLabel);
             _board.zoom = zoom;
             _board.pan = screenCenter - center * zoom;
             BoardUndo.MarkDirty(_board);
@@ -421,7 +413,6 @@ namespace PrefabBoard.Editor.UI
             var zoom = Mathf.Clamp(_board.zoom * Mathf.Exp(-evt.delta.y * 0.05f), MinZoom, MaxZoom);
             if (Mathf.Approximately(zoom, _board.zoom)) return;
 
-            BoardUndo.Record(_board, "Zoom Board");
             _board.zoom = zoom;
             _board.pan = mouse - before * zoom;
             BoardUndo.MarkDirty(_board);
@@ -447,6 +438,12 @@ namespace PrefabBoard.Editor.UI
             }
 
             if (evt.button != 0) return;
+
+            if (TryStartGroupInteraction(mouse, evt.pointerId))
+            {
+                evt.StopPropagation();
+                return;
+            }
 
             if (!(evt.shiftKey || evt.ctrlKey || evt.commandKey))
             {
@@ -507,11 +504,6 @@ namespace PrefabBoard.Editor.UI
                 if (group != null)
                 {
                     group.rect.position = _dragGroupRectStart.position + delta;
-                    foreach (var pair in _dragStartGroupItemPos)
-                    {
-                        var item = FindItem(pair.Key);
-                        if (item != null) item.position = Snap(pair.Value + delta);
-                    }
                     BoardUndo.MarkDirty(_board);
                     RefreshVisualState();
                 }
@@ -709,42 +701,20 @@ namespace PrefabBoard.Editor.UI
             evt.menu.AppendAction("Delete", _ => DeleteCards(new[] { card.ItemId }), DropdownMenuAction.AlwaysEnabled);
             evt.menu.AppendSeparator();
             evt.menu.AppendAction("Create Group From Selection", _ => CreateGroupFromSelection(), DropdownMenuAction.AlwaysEnabled);
-            var contextTargetIds = GetContextTargetItemIds(card.ItemId);
-            foreach (var g in _board.groups)
-            {
-                var gid = g.id;
-                var name = string.IsNullOrWhiteSpace(g.name) ? "Group" : g.name;
-                evt.menu.AppendAction($"Add To Group/{name}", _ => AddItemsToGroup(contextTargetIds, gid), DropdownMenuAction.AlwaysEnabled);
-            }
-            evt.menu.AppendAction("Add To Group/None", _ => AddItemsToGroup(contextTargetIds, string.Empty), DropdownMenuAction.AlwaysEnabled);
         }
 
         private void OnGroupPointerDown(GroupFrameElement groupElement, PointerDownEvent evt)
         {
-            if (_board == null) return;
-            Focus();
-            _selectedItems.Clear();
-            _selectedGroupId = groupElement.GroupId;
-            _draggingGroupId = groupElement.GroupId;
-            _dragStartGroupItemPos.Clear();
-
-            var group = FindGroup(_draggingGroupId);
-            if (group == null) return;
-
-            foreach (var item in _board.items)
+            if (_board == null)
             {
-                if (item != null && item.groupId == _draggingGroupId) _dragStartGroupItemPos[item.id] = item.position;
+                return;
             }
 
-            _dragGroupRectStart = group.rect;
+            Focus();
             var pointerSource = evt.currentTarget as VisualElement ?? groupElement;
             var pointerOnSource = new Vector2(evt.localPosition.x, evt.localPosition.y);
             var canvasPointer = pointerSource.ChangeCoordinatesTo(this, pointerOnSource);
-            _dragWorldStart = ScreenToWorld(new Vector2(canvasPointer.x, canvasPointer.y));
-            _mode = Mode.DragGroup;
-            _pointerId = evt.pointerId;
-            BoardUndo.Record(_board, "Move Group");
-            RefreshVisualState();
+            TryStartGroupInteraction(new Vector2(canvasPointer.x, canvasPointer.y), evt.pointerId);
         }
 
         private void OnGroupResizePointerDown(GroupFrameElement groupElement, GroupFrameElement.ResizeHandle handle, PointerDownEvent evt)
@@ -755,22 +725,22 @@ namespace PrefabBoard.Editor.UI
             }
 
             Focus();
-            _selectedItems.Clear();
-            _selectedGroupId = groupElement.GroupId;
-            _draggingGroupId = groupElement.GroupId;
-
-            var group = FindGroup(_draggingGroupId);
+            var group = FindGroup(groupElement.GroupId);
             if (group == null)
             {
                 return;
             }
 
-            _dragGroupRectStart = group.rect;
-            _groupResizeHandle = handle;
             var pointerSource = evt.currentTarget as VisualElement ?? groupElement;
             var pointerOnSource = new Vector2(evt.localPosition.x, evt.localPosition.y);
             var canvasPointer = pointerSource.ChangeCoordinatesTo(this, pointerOnSource);
-            _dragWorldStart = ScreenToWorld(new Vector2(canvasPointer.x, canvasPointer.y));
+            var mouse = new Vector2(canvasPointer.x, canvasPointer.y);
+            _selectedItems.Clear();
+            _selectedGroupId = group.id;
+            _draggingGroupId = group.id;
+            _dragGroupRectStart = group.rect;
+            _dragWorldStart = ScreenToWorld(mouse);
+            _groupResizeHandle = handle;
             _mode = Mode.ResizeGroup;
             _pointerId = evt.pointerId;
             BoardUndo.Record(_board, "Resize Group");
@@ -961,7 +931,7 @@ namespace PrefabBoard.Editor.UI
                     note = src.note,
                     tagColor = src.tagColor,
                     tags = src.tags != null ? src.tags.ToArray() : null,
-                    groupId = src.groupId,
+                    groupId = string.Empty,
                     previewRenderMode = BoardItemPreviewRenderMode.Auto
                 };
                 _board.items.Add(dupe);
@@ -992,38 +962,6 @@ namespace PrefabBoard.Editor.UI
             if (_selectedGroupId == groupId) _selectedGroupId = null;
             BoardUndo.MarkDirty(_board);
             RebuildFromData();
-        }
-
-        private void AddSelectedToGroup(string groupId)
-        {
-            AddItemsToGroup(_selectedItems, groupId);
-        }
-
-        private void AddItemsToGroup(IEnumerable<string> itemIds, string groupId)
-        {
-            if (_board == null) return;
-            var ids = new HashSet<string>(itemIds ?? Array.Empty<string>());
-            if (ids.Count == 0) return;
-
-            BoardUndo.Record(_board, "Assign Group");
-            foreach (var id in ids)
-            {
-                var item = FindItem(id);
-                if (item != null) item.groupId = groupId;
-            }
-            BoardUndo.MarkDirty(_board);
-            RefreshVisualState();
-            NotifyBoardDataChanged();
-        }
-
-        private IEnumerable<string> GetContextTargetItemIds(string contextItemId)
-        {
-            if (_selectedItems.Contains(contextItemId))
-            {
-                return _selectedItems.ToArray();
-            }
-
-            return new[] { contextItemId };
         }
 
         private void PingCard(string id)
@@ -1065,6 +1003,100 @@ namespace PrefabBoard.Editor.UI
             if (item.tags != null && item.tags.Any(t => !string.IsNullOrEmpty(t) && t.ToLowerInvariant().Contains(q))) return true;
             if (AssetGuidUtils.TryLoadAssetByGuid<UnityEngine.Object>(item.prefabGuid, out var asset) && asset != null)
                 return asset.name.ToLowerInvariant().Contains(q);
+            return false;
+        }
+
+        private bool TryStartGroupInteraction(Vector2 mouseScreen, int pointerId)
+        {
+            if (_board == null)
+            {
+                return false;
+            }
+
+            if (!TryHitGroup(mouseScreen, out var group, out var handle))
+            {
+                return false;
+            }
+
+            _selectedItems.Clear();
+            _selectedGroupId = group.id;
+            _draggingGroupId = group.id;
+            _dragGroupRectStart = group.rect;
+            _dragWorldStart = ScreenToWorld(mouseScreen);
+            _pointerId = pointerId;
+
+            if (handle.HasValue)
+            {
+                _groupResizeHandle = handle.Value;
+                _mode = Mode.ResizeGroup;
+                BoardUndo.Record(_board, "Resize Group");
+            }
+            else
+            {
+                _groupResizeHandle = GroupFrameElement.ResizeHandle.BottomRight;
+                _mode = Mode.DragGroup;
+                BoardUndo.Record(_board, "Move Group");
+            }
+
+            RefreshVisualState();
+            return true;
+        }
+
+        private bool TryHitGroup(Vector2 mouseScreen, out BoardGroupData group, out GroupFrameElement.ResizeHandle? handle)
+        {
+            group = null;
+            handle = null;
+
+            if (_board == null || _board.groups == null || _board.groups.Count == 0)
+            {
+                return false;
+            }
+
+            var world = ScreenToWorld(mouseScreen);
+            var toleranceWorld = Mathf.Max(2f, 8f / Mathf.Max(0.0001f, _board.zoom));
+
+            for (var i = _board.groups.Count - 1; i >= 0; i--)
+            {
+                var candidate = _board.groups[i];
+                if (candidate == null)
+                {
+                    continue;
+                }
+
+                var rect = candidate.rect;
+                var expanded = Rect.MinMaxRect(
+                    rect.xMin - toleranceWorld,
+                    rect.yMin - toleranceWorld,
+                    rect.xMax + toleranceWorld,
+                    rect.yMax + toleranceWorld);
+
+                if (!expanded.Contains(world))
+                {
+                    continue;
+                }
+
+                var hitLeft = Mathf.Abs(world.x - rect.xMin) <= toleranceWorld;
+                var hitRight = Mathf.Abs(world.x - rect.xMax) <= toleranceWorld;
+                var hitTop = Mathf.Abs(world.y - rect.yMin) <= toleranceWorld;
+                var hitBottom = Mathf.Abs(world.y - rect.yMax) <= toleranceWorld;
+
+                if (hitLeft && hitTop) handle = GroupFrameElement.ResizeHandle.TopLeft;
+                else if (hitRight && hitTop) handle = GroupFrameElement.ResizeHandle.TopRight;
+                else if (hitLeft && hitBottom) handle = GroupFrameElement.ResizeHandle.BottomLeft;
+                else if (hitRight && hitBottom) handle = GroupFrameElement.ResizeHandle.BottomRight;
+                else if (hitLeft) handle = GroupFrameElement.ResizeHandle.Left;
+                else if (hitRight) handle = GroupFrameElement.ResizeHandle.Right;
+                else if (hitTop) handle = GroupFrameElement.ResizeHandle.Top;
+                else if (hitBottom) handle = GroupFrameElement.ResizeHandle.Bottom;
+                else if (!rect.Contains(world))
+                {
+                    continue;
+                }
+
+                group = candidate;
+                return true;
+            }
+
             return false;
         }
 
@@ -1215,7 +1247,6 @@ namespace PrefabBoard.Editor.UI
             _groupResizeHandle = GroupFrameElement.ResizeHandle.BottomRight;
             _dragPrimaryItemId = null;
             _dragStartItemPos.Clear();
-            _dragStartGroupItemPos.Clear();
             _selectionOverlay.SetVisible(false);
             HideDragGhost();
         }

@@ -14,4 +14,5 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp-Editor::PrefabBoard.Editor.Data.BoardLibraryAsset
   boards:
   - {fileID: 11400000, guid: 2b73017882550e94785f903ddd825bb9, type: 2}
-  lastOpenedBoardId: cc32039996d44ab79bb97b9a1cfdfb49
+  - {fileID: 11400000, guid: d2d745abcd09ccc4396a2d585489dab7, type: 2}
+  lastOpenedBoardId: 53d9512aec92466dae2ecc1ff780703d

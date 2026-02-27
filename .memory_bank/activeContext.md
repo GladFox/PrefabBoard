@@ -10,13 +10,20 @@
 5. Убрать дедупликацию элементов при drag-out в Scene/Hierarchy.
 6. Добавить resize групп и найти/исправить причину, почему drag групп не срабатывает.
 7. Добавить горячие клавиши undo/redo (`Ctrl+Z`, `Ctrl+Y`) для отката изменений позиций.
-8. Добавить правую панель списка элементов, сгруппированных по группам, с фокусом по клику.
+8. Добавить правую панель списка (`Anchors` + `Elements`) с фокусом по клику.
 9. Обновить документацию и зафиксировать изменения в git.
 
 ## Последние изменения (текущая сессия)
+- Группы переведены в режим «anchors»:
+  - убран `Add To Group` из контекстного меню карточки;
+  - создание группы больше не перепривязывает selected карточки;
+  - drag группы больше не двигает карточки внутри.
+- Для drag/resize группы добавлен hit-test в `BoardCanvasElement.OnPointerDown`:
+  - группа и handle определяются по world hit-test (`TryHitGroup`);
+  - старт interaction больше не зависит от событий, доходящих до `GroupFrameElement`.
+- Для undo/redo убраны записи операций камеры (`Zoom`, `ResetView`, `Frame/Focus`), чтобы `Ctrl+Z/Y` откатывали только изменения элементов/групп.
 - Добавлена правая панель `BoardOutlineElement`:
-  - список всех карточек на доске;
-  - группировка по `BoardGroupData`;
+  - отдельные секции `Anchors` и `Elements`;
   - клик по карточке вызывает фокус на item;
   - клик по группе центрирует и фреймит группу по её `rect`.
 - В `PrefabBoardWindow` добавлен новый layout `toolbar + content row (canvas + right panel)`.
@@ -127,10 +134,11 @@
 - Добавлены fallback'и для `Image` без sprite и world-space fallback pipeline.
 
 ## Следующие шаги
-1. В Unity проверить drag группы за заголовок и по рамке (в т.ч. после появления карточек внутри группы).
+1. В Unity проверить drag группы за заголовок и по рамке (через canvas hit-test).
 2. Проверить resize группы всеми handle-направлениями и минимальные размеры.
-3. Проверить `Ctrl+Z/Ctrl+Y` для move item / move group / resize group.
-4. Проверить правую панель: фокус item и frame group.
+3. Проверить `Ctrl+Z/Ctrl+Y` для move item / move group / resize group (без отката pan/zoom камеры).
+4. Проверить правую панель: секции `Anchors`/`Elements`, фокус item и frame group.
+5. Отдельно спроектировать optional-режим «приклеивания» карточки к верхней группе + правило запрета пересечений групп.
 
 ## План (REQUIREMENTS_OWNER)
 1. Внести resize handles в `GroupFrameElement` и режим resize в `BoardCanvasElement`.
@@ -139,14 +147,15 @@
 4. Синхронизировать README/Memory Bank и закоммитить.
 
 ## Стратегия (ARCHITECT)
-- Не менять модель данных; реализовать фичи на уровне UI-событий и существующих `BoardGroupData/BoardItemData`.
+- Оставить `groupId` в data model для будущего optional-режима, но не использовать в текущем UX.
 - Для undo/redo использовать нативный Unity Undo pipeline без собственного стека операций.
+- Для drag/resize группы приоритизировать canvas-level hit-testing как более стабильный источник pointer interaction.
 - Для правой панели использовать однонаправленный поток: `Canvas -> событие BoardDataChanged -> Outline.Rebuild()`.
 
 ## REVIEWER checklist
 - Группы двигаются и ресайзятся; `group.rect` обновляется корректно.
-- Undo/redo работает для изменения позиций/размеров после drag операций.
-- Правая панель отображает все items по группам и корректно фокусирует canvas.
+- Undo/redo работает для изменения позиций/размеров после drag операций и не откатывает camera-only actions.
+- Правая панель отображает `Anchors`/`Elements` и корректно фокусирует canvas.
 - Документация и Memory Bank синхронизированы.
 
 ## QA_TESTER заметки

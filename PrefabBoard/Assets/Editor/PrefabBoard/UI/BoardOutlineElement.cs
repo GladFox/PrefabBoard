@@ -44,10 +44,7 @@ namespace PrefabBoard.Editor.UI
                 return;
             }
 
-            var validGroupIds = new HashSet<string>();
-            var itemsByGroup = new Dictionary<string, List<BoardItemData>>();
-            var ungrouped = new List<BoardItemData>();
-
+            var groups = new List<BoardGroupData>();
             foreach (var group in _board.groups)
             {
                 if (group == null || string.IsNullOrEmpty(group.id))
@@ -55,73 +52,54 @@ namespace PrefabBoard.Editor.UI
                     continue;
                 }
 
-                validGroupIds.Add(group.id);
-                itemsByGroup[group.id] = new List<BoardItemData>();
+                groups.Add(group);
             }
 
-            foreach (var item in _board.items)
-            {
-                if (item == null || string.IsNullOrEmpty(item.id))
-                {
-                    continue;
-                }
+            var anchorsLabel = new Label($"Anchors ({groups.Count})");
+            anchorsLabel.AddToClassList("pb-outline-ungrouped");
+            _scroll.Add(anchorsLabel);
 
-                if (!string.IsNullOrEmpty(item.groupId) &&
-                    validGroupIds.Contains(item.groupId) &&
-                    itemsByGroup.TryGetValue(item.groupId, out var groupItems))
-                {
-                    groupItems.Add(item);
-                }
-                else
-                {
-                    ungrouped.Add(item);
-                }
+            if (groups.Count == 0)
+            {
+                AddInfoLabel("No anchors.");
             }
-
-            foreach (var group in _board.groups)
+            else
             {
-                if (group == null || string.IsNullOrEmpty(group.id))
+                foreach (var group in groups)
                 {
-                    continue;
-                }
-
-                itemsByGroup.TryGetValue(group.id, out var groupItems);
-                groupItems ??= new List<BoardItemData>();
-
                 var groupName = string.IsNullOrWhiteSpace(group.name) ? "Group" : group.name;
                 var groupButton = new Button(() => GroupFocusRequested?.Invoke(group.id))
                 {
-                    text = $"{groupName} ({groupItems.Count})"
+                    text = groupName
                 };
                 groupButton.AddToClassList("pb-outline-group");
                 _scroll.Add(groupButton);
-
-                if (groupItems.Count == 0)
-                {
-                    AddInfoLabel("Empty group", "pb-outline-empty");
-                    continue;
-                }
-
-                foreach (var item in groupItems)
-                {
-                    _scroll.Add(CreateItemButton(item, true));
                 }
             }
 
-            if (ungrouped.Count > 0)
+            var items = new List<BoardItemData>();
+            foreach (var item in _board.items)
             {
-                var ungroupedLabel = new Label($"Ungrouped ({ungrouped.Count})");
-                ungroupedLabel.AddToClassList("pb-outline-ungrouped");
-                _scroll.Add(ungroupedLabel);
+                if (item != null && !string.IsNullOrEmpty(item.id))
+                {
+                    items.Add(item);
+                }
+            }
 
-                foreach (var item in ungrouped)
+            var itemsLabel = new Label($"Elements ({items.Count})");
+            itemsLabel.AddToClassList("pb-outline-ungrouped");
+            _scroll.Add(itemsLabel);
+
+            if (items.Count == 0)
+            {
+                AddInfoLabel("No elements.");
+            }
+            else
+            {
+                foreach (var item in items)
                 {
                     _scroll.Add(CreateItemButton(item, false));
                 }
-            }
-            else if (_board.items.Count == 0)
-            {
-                AddInfoLabel("No items on board.");
             }
         }
 

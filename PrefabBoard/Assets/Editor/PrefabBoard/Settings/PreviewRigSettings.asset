@@ -17,7 +17,7 @@ MonoBehaviour:
   cameraPath: Rig/Camera
   canvasPath: Rig/Canvas
   contentPath: Rig/Canvas/Content
-  cameraBackground: {r: 0, g: 0.035458565, b: 1, a: 1}
+  cameraBackground: {r: 0, g: 0, b: 0, a: 1}
   nearClipPlane: 0.01
   farClipPlane: 200
   planeDistance: 1

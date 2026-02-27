@@ -14,30 +14,40 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp-Editor::PrefabBoard.Editor.Data.PrefabBoardAsset
   boardId: cc32039996d44ab79bb97b9a1cfdfb49
   boardName: Main Board
-  pan: {x: 949.0262, y: 432.29053}
-  zoom: 1.2752564
+  pan: {x: 789.82935, y: 603.6874}
+  zoom: 0.13895904
   items:
-  - id: c346fee68eda46f5999e7075a9e9bf89
+  - id: 63419f454e5c451ab9380857cf2b03cb
     prefabGuid: e3d31ff64e017b0478bc10f20bb26c68
-    position: {x: -693.9436, y: -284.15656}
-    size: {x: 220, y: 120}
+    position: {x: -3690.5508, y: -3617.5537}
+    size: {x: 1280, y: 2208}
     titleOverride: 
     note: 
     tagColor: {r: 0, g: 0, b: 0, a: 0}
     tags: []
     groupId: 
-    previewRenderMode: 2
-  - id: e65fa41669ba4da186c8a66a083ac796
+    previewRenderMode: 0
+  - id: 91d0e51b85bd4223bd4ca1d26641a47e
     prefabGuid: a8b41dd92ad6c41489e90ad424880264
-    position: {x: -390.37335, y: -281.26935}
-    size: {x: 220, y: 120}
+    position: {x: -2210.591, y: -3543.439}
+    size: {x: 300, y: 160}
     titleOverride: 
     note: 
     tagColor: {r: 0, g: 0, b: 0, a: 0}
     tags: []
     groupId: 
-    previewRenderMode: 2
-  groups: []
+    previewRenderMode: 0
+  groups:
+  - id: 8d9fc4a8c8c04544907b91f9e1cc6343
+    name: Group 1
+    rect:
+      serializedVersion: 2
+      x: -3869.8845
+      y: -3998.9294
+      width: 3470.4631
+      height: 4968.371
+    color: {r: 0.2, g: 0.5, b: 0.9, a: 0.18}
+    zOrder: 0
   viewSettings:
     gridEnabled: 1
     snapEnabled: 0
