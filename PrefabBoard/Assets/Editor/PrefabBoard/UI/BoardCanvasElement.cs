@@ -74,6 +74,7 @@ namespace PrefabBoard.Editor.UI
             RegisterCallback<PointerUpEvent>(OnPointerUp);
             RegisterCallback<KeyDownEvent>(OnKeyDown);
             RegisterCallback<KeyUpEvent>(OnKeyUp);
+            RegisterCallback<ContextualMenuPopulateEvent>(OnCanvasContextMenu);
             RegisterCallback<DragUpdatedEvent>(OnDragUpdated);
             RegisterCallback<DragPerformEvent>(OnDragPerform);
             RegisterCallback<AttachToPanelEvent>(OnAttachToPanel);
@@ -341,7 +342,7 @@ namespace PrefabBoard.Editor.UI
                 var ve = new GroupFrameElement(group.id);
                 ve.PrimaryPointerDown += OnGroupPointerDown;
                 ve.ResizePointerDown += OnGroupResizePointerDown;
-                ve.ContextMenuPopulateRequested += (el, evt) => evt.menu.AppendAction("Delete Group", _ => DeleteGroup(el.GroupId), DropdownMenuAction.AlwaysEnabled);
+                ve.ContextMenuPopulateRequested += OnGroupContextMenu;
                 _groups[group.id] = ve;
                 _groupsLayer.Add(ve);
             }
@@ -703,6 +704,33 @@ namespace PrefabBoard.Editor.UI
             evt.menu.AppendAction("Create Group From Selection", _ => CreateGroupFromSelection(), DropdownMenuAction.AlwaysEnabled);
         }
 
+        private void OnGroupContextMenu(GroupFrameElement groupElement, ContextualMenuPopulateEvent evt)
+        {
+            evt.menu.AppendAction("Rename Group", _ => RenameGroup(groupElement.GroupId), DropdownMenuAction.AlwaysEnabled);
+            evt.menu.AppendSeparator();
+            evt.menu.AppendAction("Delete Group", _ => DeleteGroup(groupElement.GroupId), DropdownMenuAction.AlwaysEnabled);
+        }
+
+        private void OnCanvasContextMenu(ContextualMenuPopulateEvent evt)
+        {
+            if (_board == null)
+            {
+                return;
+            }
+
+            var targetElement = evt.target as VisualElement;
+            if (targetElement is PrefabCardElement ||
+                targetElement is GroupFrameElement ||
+                (targetElement != null && targetElement.GetFirstAncestorOfType<PrefabCardElement>() != null) ||
+                (targetElement != null && targetElement.GetFirstAncestorOfType<GroupFrameElement>() != null))
+            {
+                return;
+            }
+
+            var mouse = new Vector2(evt.localMousePosition.x, evt.localMousePosition.y);
+            evt.menu.AppendAction("Create Group", _ => CreateGroupAt(mouse), DropdownMenuAction.AlwaysEnabled);
+        }
+
         private void OnGroupPointerDown(GroupFrameElement groupElement, PointerDownEvent evt)
         {
             if (_board == null)
@@ -964,6 +992,50 @@ namespace PrefabBoard.Editor.UI
             RebuildFromData();
         }
 
+        private void RenameGroup(string groupId)
+        {
+            if (_board == null || string.IsNullOrEmpty(groupId))
+            {
+                return;
+            }
+
+            var group = FindGroup(groupId);
+            if (group == null)
+            {
+                return;
+            }
+
+            var initialName = string.IsNullOrWhiteSpace(group.name) ? "Group" : group.name;
+            TextPromptWindow.Show(
+                "Rename Group",
+                "Name",
+                initialName,
+                value =>
+                {
+                    if (_board == null)
+                    {
+                        return;
+                    }
+
+                    var target = FindGroup(groupId);
+                    if (target == null)
+                    {
+                        return;
+                    }
+
+                    var nextName = (value ?? string.Empty).Trim();
+                    if (string.IsNullOrEmpty(nextName) || string.Equals(nextName, target.name, StringComparison.Ordinal))
+                    {
+                        return;
+                    }
+
+                    BoardUndo.Record(_board, "Rename Group");
+                    target.name = nextName;
+                    BoardUndo.MarkDirty(_board);
+                    RebuildFromData();
+                });
+        }
+
         private void PingCard(string id)
         {
             var item = FindItem(id);
@@ -1124,6 +1196,26 @@ namespace PrefabBoard.Editor.UI
             result.xMax += 48f;
             result.yMax += 48f;
             return result;
+        }
+
+        private void CreateGroupAt(Vector2 mouseScreen)
+        {
+            if (_board == null)
+            {
+                return;
+            }
+
+            var center = ScreenToWorld(mouseScreen);
+            var size = new Vector2(520f, 360f);
+            var groupRect = new Rect(center - size * 0.5f, size);
+            var group = BoardGroupData.Create($"Group {_board.groups.Count + 1}", groupRect);
+
+            BoardUndo.Record(_board, "Create Group");
+            _board.groups.Add(group);
+            _selectedItems.Clear();
+            _selectedGroupId = group.id;
+            BoardUndo.MarkDirty(_board);
+            RebuildFromData();
         }
 
         private static Rect ResizeGroupRect(Rect start, Vector2 delta, GroupFrameElement.ResizeHandle handle)

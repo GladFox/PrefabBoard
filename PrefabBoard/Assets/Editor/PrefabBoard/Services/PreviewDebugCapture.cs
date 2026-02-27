@@ -21,7 +21,7 @@ namespace PrefabBoard.Editor.Services
         private static string _worldNote = string.Empty;
         private static string _finalNote = string.Empty;
 
-        public static bool CaptureEnabled = true;
+        public static bool CaptureEnabled = false;
 
         public static string PrefabGuid { get; private set; } = string.Empty;
         public static string PrefabPath { get; private set; } = string.Empty;

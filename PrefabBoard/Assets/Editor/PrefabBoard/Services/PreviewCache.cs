@@ -183,22 +183,15 @@ namespace PrefabBoard.Editor.Services
 
         public static bool TryCreateTestSceneFromLastCapture(out string scenePath, out string error)
         {
-            scenePath = DefaultDebugScenePath;
-            error = string.Empty;
-
-            var prefabGuid = PreviewDebugCapture.PrefabGuid;
-            if (string.IsNullOrEmpty(prefabGuid))
-            {
-                error = "No preview capture found. Open a board card first to produce preview capture.";
-                return false;
-            }
-
-            return TryCreateTestScene(prefabGuid, PreviewDebugCapture.CanvasSize, PreviewDebugCapture.RenderMode, scenePath, out error);
+            scenePath = string.Empty;
+            error = "Test scene rendering is disabled.";
+            return false;
         }
 
         public static bool TryCreateTestScene(string prefabGuid, Vector2Int canvasSize, string scenePath, out string error)
         {
-            return TryCreateTestScene(prefabGuid, canvasSize, BoardItemPreviewRenderMode.Auto, scenePath, out error);
+            error = "Test scene rendering is disabled.";
+            return false;
         }
 
         public static bool TryCreateTestScene(
@@ -208,21 +201,8 @@ namespace PrefabBoard.Editor.Services
             string scenePath,
             out string error)
         {
-            error = string.Empty;
-
-            if (string.IsNullOrEmpty(prefabGuid))
-            {
-                error = "Prefab GUID is empty.";
-                return false;
-            }
-
-            if (!AssetGuidUtils.TryLoadAssetByGuid<GameObject>(prefabGuid, out var prefabAsset) || prefabAsset == null)
-            {
-                error = "Failed to resolve prefab by GUID: " + prefabGuid;
-                return false;
-            }
-
-            return TryCreateTestScene(prefabAsset, canvasSize, renderMode, scenePath, out error);
+            error = "Test scene rendering is disabled.";
+            return false;
         }
 
         public static Vector2 ResolvePreferredBoardItemSize(string prefabGuid, Vector2 editorResolution)

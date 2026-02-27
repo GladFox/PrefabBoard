@@ -10,17 +10,27 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a31dfbfe8a8e2f144b89955755cd720c, type: 3}
-  m_Name: Main Board 1
+  m_Name: Main Board 5
   m_EditorClassIdentifier: Assembly-CSharp-Editor::PrefabBoard.Editor.Data.PrefabBoardAsset
-  boardId: 53d9512aec92466dae2ecc1ff780703d
+  boardId: 156982098d8d4ecfb13bd5af94bc02f1
   boardName: Main Board
-  pan: {x: 0, y: 0}
-  zoom: 1
-  items: []
+  pan: {x: 390.68222, y: 301.62372}
+  zoom: 0.090717986
+  items:
+  - id: 7a7daab67efb4c77ac1f11609308e7df
+    prefabGuid: e3d31ff64e017b0478bc10f20bb26c68
+    position: {x: 217.6, y: 223.20001}
+    size: {x: 1280, y: 2208}
+    titleOverride: 
+    note: 
+    tagColor: {r: 0, g: 0, b: 0, a: 0}
+    tags: []
+    groupId: 
+    previewRenderMode: 0
   groups: []
   viewSettings:
     gridEnabled: 1
-    snapEnabled: 1
+    snapEnabled: 0
     gridStep: 64
     minZoom: 0.02
     maxZoom: 2

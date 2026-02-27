@@ -12,6 +12,7 @@ namespace PrefabBoard.Editor.UI
         private readonly ScrollView _scroll;
         private PrefabBoardAsset _board;
 
+        public event Action HomeRequested;
         public event Action<string> ItemFocusRequested;
         public event Action<string> GroupFocusRequested;
 
@@ -22,6 +23,13 @@ namespace PrefabBoard.Editor.UI
             var title = new Label("Board Items");
             title.AddToClassList("pb-outline-title");
             Add(title);
+
+            var homeButton = new Button(() => HomeRequested?.Invoke())
+            {
+                text = "Home"
+            };
+            homeButton.AddToClassList("pb-outline-home");
+            Add(homeButton);
 
             _scroll = new ScrollView(ScrollViewMode.Vertical);
             _scroll.AddToClassList("pb-outline-scroll");

@@ -10,6 +10,7 @@ namespace PrefabBoard.Editor.UI
     public sealed class PrefabBoardWindow : EditorWindow
     {
         private const string StylePath = "Assets/Editor/PrefabBoard/Styles/PrefabBoard.uss";
+        private static PrefabBoardAsset s_pendingBoardToOpen;
 
         private List<PrefabBoardAsset> _boards = new List<PrefabBoardAsset>();
         private PrefabBoardAsset _currentBoard;
@@ -25,6 +26,25 @@ namespace PrefabBoard.Editor.UI
             window.titleContent = new GUIContent("Prefab Board");
             window.minSize = new Vector2(900f, 540f);
             window.Show();
+        }
+
+        public static void OpenBoard(PrefabBoardAsset board)
+        {
+            if (board == null)
+            {
+                Open();
+                return;
+            }
+
+            s_pendingBoardToOpen = board;
+            BoardRepository.SetLastOpenedBoard(board);
+
+            var window = GetWindow<PrefabBoardWindow>();
+            window.titleContent = new GUIContent("Prefab Board");
+            window.minSize = new Vector2(900f, 540f);
+            window.Show();
+            window.Focus();
+            window.TryApplyPendingBoardSelection();
         }
 
         public void CreateGUI()
@@ -61,15 +81,11 @@ namespace PrefabBoard.Editor.UI
 
             _toolbar.BoardSelectionChanged += OnBoardSelectionChanged;
             _toolbar.NewBoardRequested += OnNewBoard;
-            _toolbar.DuplicateBoardRequested += OnDuplicateBoard;
-            _toolbar.RenameBoardRequested += OnRenameBoard;
-            _toolbar.DeleteBoardRequested += OnDeleteBoard;
-            _toolbar.CreateGroupRequested += () => _canvas.CreateGroupFromSelection();
-            _toolbar.HomeRequested += () => _canvas.ResetView();
             _toolbar.SearchChanged += value => _canvas.SetSearchQuery(value);
             _toolbar.GridToggled += value => _canvas.SetGridEnabled(value);
             _toolbar.SnapToggled += value => _canvas.SetSnapEnabled(value);
 
+            _outline.HomeRequested += () => _canvas.ResetView();
             _outline.ItemFocusRequested += id => _canvas.FocusItem(id);
             _outline.GroupFocusRequested += id => _canvas.FocusGroup(id);
             _canvas.BoardDataChanged += () => _outline.Rebuild();
@@ -90,6 +106,7 @@ namespace PrefabBoard.Editor.UI
 
             _currentBoard = BoardRepository.GetLastOrFirstBoard(_boards);
             RefreshBindings();
+            TryApplyPendingBoardSelection();
         }
 
         private void RefreshBindings()
@@ -127,6 +144,22 @@ namespace PrefabBoard.Editor.UI
             Repaint();
         }
 
+        private void TryApplyPendingBoardSelection()
+        {
+            if (s_pendingBoardToOpen == null)
+            {
+                return;
+            }
+
+            ReloadBoards();
+            if (_boards.Contains(s_pendingBoardToOpen))
+            {
+                _currentBoard = s_pendingBoardToOpen;
+                s_pendingBoardToOpen = null;
+                RefreshBindings();
+            }
+        }
+
         private void OnBoardSelectionChanged(int index)
         {
             if (index < 0 || index >= _boards.Count)
@@ -146,60 +179,6 @@ namespace PrefabBoard.Editor.UI
                 : _toolbar.BoardNameInput.Trim();
 
             _currentBoard = BoardRepository.CreateBoard(desiredName);
-            RefreshBindings();
-        }
-
-        private void OnDuplicateBoard()
-        {
-            if (_currentBoard == null)
-            {
-                return;
-            }
-
-            _currentBoard = BoardRepository.DuplicateBoard(_currentBoard);
-            RefreshBindings();
-        }
-
-        private void OnRenameBoard()
-        {
-            if (_currentBoard == null)
-            {
-                return;
-            }
-
-            var desiredName = _toolbar.BoardNameInput;
-            if (string.IsNullOrWhiteSpace(desiredName))
-            {
-                return;
-            }
-
-            BoardUndo.Record(_currentBoard, "Rename Board");
-            BoardRepository.RenameBoard(_currentBoard, desiredName);
-            AssetDatabase.SaveAssets();
-            RefreshBindings();
-        }
-
-        private void OnDeleteBoard()
-        {
-            if (_currentBoard == null)
-            {
-                return;
-            }
-
-            var confirm = EditorUtility.DisplayDialog(
-                "Delete board",
-                $"Delete board '{_currentBoard.boardName}'?",
-                "Delete",
-                "Cancel");
-
-            if (!confirm)
-            {
-                return;
-            }
-
-            BoardRepository.DeleteBoard(_currentBoard);
-            ReloadBoards();
-            _currentBoard = BoardRepository.GetLastOrFirstBoard(_boards);
             RefreshBindings();
         }
 

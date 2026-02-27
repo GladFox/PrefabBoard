@@ -12,7 +12,6 @@ namespace PrefabBoard.Editor.Services
     {
         public const string RootFolder = "Assets/Editor/PrefabBoards";
         public const string BoardsFolder = RootFolder + "/Boards";
-        public const string LibraryPath = RootFolder + "/BoardLibrary.asset";
 
         private const string LastOpenedBoardIdEditorPrefKey = "PrefabBoard.LastOpenedBoardId";
 

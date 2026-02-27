@@ -240,9 +240,16 @@
 .pb-outline-title {
     padding-left: 10px;
     padding-top: 8px;
-    padding-bottom: 8px;
+    padding-bottom: 4px;
     color: rgb(225, 233, 245);
     unity-font-style: bold;
+}
+
+.pb-outline-home {
+    margin-left: 8px;
+    margin-right: 8px;
+    margin-bottom: 8px;
+    unity-text-align: middle-center;
 }
 
 .pb-outline-scroll {

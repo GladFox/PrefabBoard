@@ -33,7 +33,8 @@ Editor-only инструмент `Prefab Board` на Unity UI Toolkit:
   - `BoardCanvasElement`
   - `BoardOutlineElement`
   - `PrefabCardElement`
-  - `PreviewDebugWindow`
+  - `PrefabBoardAssetEditor`
+  - `TextPromptWindow`
   - `GroupFrameElement`
   - `SelectionOverlayElement`
   - `BoardToolbarElement`
@@ -84,7 +85,7 @@ Zoom-to-cursor реализован через фиксацию точки по�
 - `LMB drag` за границы окна PrefabBoard: внешний drag в Scene/Hierarchy (создание instance prefab)
 - `MMB` или `Space + LMB`: pan
 - `Mouse wheel`: zoom to cursor
-- `Home` в toolbar: reset view (`pan=0`, `zoom=1`)
+- `Home` в правой панели навигации: reset view (`pan=0`, `zoom=1`)
 - `Delete/Backspace`: удалить выделение
 - `Ctrl/Cmd + D`: дублировать выбранные карточки
 - `Ctrl/Cmd + Z`: undo
@@ -92,7 +93,8 @@ Zoom-to-cursor реализован через фиксацию точки по�
 - `F`: frame selection
 - Box selection: drag по пустому месту
 - `Project -> Canvas` drag-over: ghost preview позиции добавления
-- Группы: drag по рамке/заголовку + resize через handles по краям/углам
+- RMB по пустому месту Canvas: контекстное меню `Create Group`
+- Группы: drag по рамке/заголовку + resize через handles по краям/углам + rename через context menu
 - Правая панель (`Board Items`): отдельные секции `Anchors` и `Elements`, клик по item фокусирует карточку, клик по anchor центрирует и фреймит группу
 
 ## Preview Rendering and Sizing
@@ -114,14 +116,7 @@ UI preview рендерится через временный rig в additive-с
 Если screen-space кадр пустой, выполняется fallback world-space рендер.
 При изменении `.prefab` ассета кэш соответствующего preview автоматически инвалидируется через `AssetPostprocessor`.
 Перерисовка в Canvas делается для изменённых карточек и только когда панель видима.
-Для диагностики доступно окно `Tools/PrefabBoard/Preview Debug`:
-- показывает raw кадры `ScreenSpace`, `WorldSpace`, `Final`
-- показывает метаданные (prefab path, mode, canvas size, время)
-- умеет сохранять PNG в `Temp/PrefabBoardPreviewDebug`
-- можно собрать реальную сцену `Assets/Scenes/Test.unity` с тем же preview rig через:
-  - `Tools/PrefabBoard/Create Test Scene/From Last Preview Capture`
-  - `Tools/PrefabBoard/Create Test Scene/From Selected Prefab`
-  Это создаёт `PrefabBoardPreviewCamera + PrefabBoardPreviewCanvas + Content + instance prefab` с теми же настройками, что в preview pipeline.
+Отладочные UI (`Preview Debug` окно и создание `Test.unity`) удалены из пользовательского workflow.
 
 Canvas и карточки клиппируются по своим границам, чтобы контент не выходил поверх toolbar и за пределы элемента.
 
@@ -140,6 +135,11 @@ Canvas и карточки клиппируются по своим границ
 - `EditorUtility.SetDirty(...)`
 
 Состояние хранится в ScriptableObject-ассетах, без создания runtime GameObject для карточек/групп.
+
+## Board Assets
+- `BoardLibrary` удалён из проекта.
+- Каждая доска живёт отдельным `PrefabBoardAsset` файлом.
+- В инспекторе `PrefabBoardAsset` есть кнопка `Open`, открывающая нужную доску в `PrefabBoardWindow`.
 
 ## Data Consistency
 - При duplicate board ID групп пересоздаются, а `item.groupId` ремапится на новые group IDs.

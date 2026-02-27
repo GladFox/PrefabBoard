@@ -19,11 +19,6 @@ namespace PrefabBoard.Editor.UI
 
         public event Action<int> BoardSelectionChanged;
         public event Action NewBoardRequested;
-        public event Action DuplicateBoardRequested;
-        public event Action RenameBoardRequested;
-        public event Action DeleteBoardRequested;
-        public event Action CreateGroupRequested;
-        public event Action HomeRequested;
         public event Action<string> SearchChanged;
         public event Action<bool> GridToggled;
         public event Action<bool> SnapToggled;
@@ -45,11 +40,6 @@ namespace PrefabBoard.Editor.UI
             _boardNameField.style.width = 180f;
 
             var newBoardButton = new Button(() => NewBoardRequested?.Invoke()) { text = "New" };
-            var duplicateButton = new Button(() => DuplicateBoardRequested?.Invoke()) { text = "Duplicate" };
-            var renameButton = new Button(() => RenameBoardRequested?.Invoke()) { text = "Rename" };
-            var deleteButton = new Button(() => DeleteBoardRequested?.Invoke()) { text = "Delete" };
-            var groupButton = new Button(() => CreateGroupRequested?.Invoke()) { text = "New Group" };
-            var homeButton = new Button(() => HomeRequested?.Invoke()) { text = "Home" };
 
             _searchField = new ToolbarSearchField();
             _searchField.style.minWidth = 220f;
@@ -63,12 +53,7 @@ namespace PrefabBoard.Editor.UI
 
             Add(_boardPopup);
             Add(newBoardButton);
-            Add(duplicateButton);
-            Add(renameButton);
-            Add(deleteButton);
             Add(_boardNameField);
-            Add(groupButton);
-            Add(homeButton);
             Add(_searchField);
             Add(_gridToggle);
             Add(_snapToggle);
