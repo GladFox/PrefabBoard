@@ -1,49 +1,34 @@
 # Active Context
 
 ## Текущие задачи
-1. Проверить в Unity UX после cleanup toolbar/navigation (создание/переключение досок, Home в правой панели).
-2. Проверить workflow групп: RMB Create Group, Rename Group, drag/resize, undo/redo.
-3. Проверить открытие доски из инспектора `PrefabBoardAsset` кнопкой `Open`.
-4. Подтвердить, что debug/test scene инструменты больше недоступны в меню.
+1. Провести smoke в Unity после правок верхнего toolbar.
+2. Проверить, что dropdown `Board` показывает все `PrefabBoardAsset` из проекта.
+3. Проверить автo-refresh списка досок при возврате фокуса в окно.
 
-## Последние изменения (текущая сессия)
-- Удалены legacy/debug артефакты:
-  - удалён `BoardLibraryAsset` (скрипт и `BoardLibrary.asset`);
-  - удалены меню/окна `Preview Debug` и `Create Test Scene`.
-- В `PreviewCache` публичный API создания test-сцены отключён (`Test scene rendering is disabled`).
-- В `PreviewDebugCapture` отключён runtime capture по умолчанию (`CaptureEnabled = false`).
-- В toolbar убраны операции board-level `Duplicate`, `Rename`, `Delete` и кнопка `Home`.
-- Кнопка `Home` перенесена в правую панель навигации (`BoardOutlineElement`).
-- В Canvas добавлено контекстное меню по правому клику на пустом месте: `Create Group`.
-- Для групп добавлено переименование через context menu (`Rename Group`).
-- Добавлено окно ввода текста `TextPromptWindow` для rename операций.
-- Добавлен custom inspector `PrefabBoardAssetEditor` с кнопкой `Open` для открытия конкретной доски.
-- `PrefabBoardWindow` получил `OpenBoard(PrefabBoardAsset)` и поддержку отложенного выбора доски при открытии окна.
-- Обновлены стили правой панели под кнопку `Home`.
+## Последние изменения
+- Исправлена верхняя панель: убран конфликт label/control в toolbar.
+- Удалено поле `Name` из toolbar.
+- Toolbar переведен в `nowrap`.
+- Поиск досок переведен на `AssetDatabase.FindAssets("t:PrefabBoardAsset")` по всему проекту.
+- В `PrefabBoardWindow` добавлен `OnFocus()` для refresh bindings.
 
 ## Следующие шаги
-1. Ручной smoke в Unity Editor по сценариям из DoD/текущих задач.
-2. Если понадобятся board-level операции (rename/delete), выполнять через файловый менеджмент ассетов.
-3. При следующем изменении обновить `VERSION` и `RELEASE_NOTES.md` (если планируется релизный срез).
+1. Если UX toolbar ок — оставить текущий compact layout.
+2. При необходимости добавить явную сортировку/группировку досок по папкам.
 
 ## План (REQUIREMENTS_OWNER)
-1. Удалить неактуальные инструменты debug/test scene.
-2. Перенастроить UX панели управления доской (toolbar + navigation).
-3. Добавить rename групп и создание групп через RMB-меню.
-4. Убрать зависимость от BoardLibrary и открыть доску из инспектора ассета.
+1. Починить визуальное выравнивание контролов в верхней панели.
+2. Обеспечить полный список досок в dropdown `Board`.
 
 ## Стратегия (ARCHITECT)
-- Хранение multi-board остаётся board-per-file, без shared library asset.
-- Board-level lifecycle операции не предоставляются кнопками в toolbar.
-- Контекстные действия для групп/канваса реализуются через `ContextualMenuPopulateEvent`.
+- Минимизировать элементы в toolbar, чтобы избежать переносов и конфликтов label-контрол.
+- Источник данных списка досок — глобальный поиск `PrefabBoardAsset`.
 
 ## REVIEWER checklist
-- Нет ссылок на удалённые `BoardLibraryAsset`, `PreviewDebugWindow`, `PreviewTestSceneMenu`.
-- Home доступен только в right outline.
-- В контекстном меню группы есть `Rename Group`.
-- В контекстном меню пустого canvas есть `Create Group`.
-- Инспектор `PrefabBoardAsset` содержит кнопку `Open`.
+- Toolbar без рассинхрона caption/control.
+- `Board` dropdown видит все доски проекта.
+- Refresh списка досок срабатывает при `OnFocus`.
 
 ## QA_TESTER заметки
-- Локальная `dotnet build PrefabBoard.sln` прошла успешно.
-- Нужна ручная проверка внутри Unity Editor.
+- Локальная `dotnet build` успешна.
+- Нужна ручная проверка в Unity Editor.

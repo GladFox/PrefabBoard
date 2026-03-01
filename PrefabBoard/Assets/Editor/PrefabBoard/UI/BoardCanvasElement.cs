@@ -26,6 +26,7 @@ namespace PrefabBoard.Editor.UI
         private readonly Dictionary<string, Vector2> _dragStartItemPos = new Dictionary<string, Vector2>();
         private const float MinGroupWidth = 120f;
         private const float MinGroupHeight = 90f;
+        private const float GroupHeaderHeightPx = 20f;
 
         private PrefabBoardAsset _board;
         private string _selectedGroupId;
@@ -67,6 +68,7 @@ namespace PrefabBoard.Editor.UI
             Add(_groupsLayer);
             Add(_itemsLayer);
             Add(_overlayLayer);
+            _itemsLayer.AddManipulator(new ContextualMenuManipulator(OnCanvasContextMenu));
 
             RegisterCallback<WheelEvent>(OnWheel, TrickleDown.TrickleDown);
             RegisterCallback<PointerDownEvent>(OnPointerDown);
@@ -74,7 +76,6 @@ namespace PrefabBoard.Editor.UI
             RegisterCallback<PointerUpEvent>(OnPointerUp);
             RegisterCallback<KeyDownEvent>(OnKeyDown);
             RegisterCallback<KeyUpEvent>(OnKeyUp);
-            RegisterCallback<ContextualMenuPopulateEvent>(OnCanvasContextMenu);
             RegisterCallback<DragUpdatedEvent>(OnDragUpdated);
             RegisterCallback<DragPerformEvent>(OnDragPerform);
             RegisterCallback<AttachToPanelEvent>(OnAttachToPanel);
@@ -342,6 +343,7 @@ namespace PrefabBoard.Editor.UI
                 var ve = new GroupFrameElement(group.id);
                 ve.PrimaryPointerDown += OnGroupPointerDown;
                 ve.ResizePointerDown += OnGroupResizePointerDown;
+                ve.RenameRequested += OnGroupRenameRequested;
                 ve.ContextMenuPopulateRequested += OnGroupContextMenu;
                 _groups[group.id] = ve;
                 _groupsLayer.Add(ve);
@@ -596,6 +598,13 @@ namespace PrefabBoard.Editor.UI
             {
                 FrameSelection();
                 evt.StopPropagation();
+                return;
+            }
+
+            if (evt.keyCode == KeyCode.F2 && !string.IsNullOrEmpty(_selectedGroupId))
+            {
+                RenameGroup(_selectedGroupId);
+                evt.StopPropagation();
             }
         }
 
@@ -606,6 +615,14 @@ namespace PrefabBoard.Editor.UI
         private void OnDragUpdated(DragUpdatedEvent evt)
         {
             if (_board == null) return;
+            if (PrefabStageDropHandler.HasPayload())
+            {
+                DragAndDrop.visualMode = DragAndDropVisualMode.Rejected;
+                HideDragGhost();
+                evt.StopPropagation();
+                return;
+            }
+
             var hasPrefabs = HasDraggedPrefabs();
             DragAndDrop.visualMode = hasPrefabs ? DragAndDropVisualMode.Copy : DragAndDropVisualMode.Rejected;
             if (hasPrefabs)
@@ -623,6 +640,14 @@ namespace PrefabBoard.Editor.UI
         private void OnDragPerform(DragPerformEvent evt)
         {
             if (_board == null || !HasDraggedPrefabs()) return;
+            if (PrefabStageDropHandler.HasPayload())
+            {
+                HideDragGhost();
+                DragAndDrop.AcceptDrag();
+                PrefabStageDropHandler.ClearPayload();
+                evt.StopPropagation();
+                return;
+            }
 
             HideDragGhost();
             var world = ScreenToWorld(new Vector2(evt.localMousePosition.x, evt.localMousePosition.y));
@@ -711,6 +736,19 @@ namespace PrefabBoard.Editor.UI
             evt.menu.AppendAction("Delete Group", _ => DeleteGroup(groupElement.GroupId), DropdownMenuAction.AlwaysEnabled);
         }
 
+        private void OnGroupRenameRequested(GroupFrameElement groupElement)
+        {
+            if (_board == null || groupElement == null)
+            {
+                return;
+            }
+
+            _selectedItems.Clear();
+            _selectedGroupId = groupElement.GroupId;
+            RefreshVisualState();
+            RenameGroup(groupElement.GroupId);
+        }
+
         private void OnCanvasContextMenu(ContextualMenuPopulateEvent evt)
         {
             if (_board == null)
@@ -718,16 +756,12 @@ namespace PrefabBoard.Editor.UI
                 return;
             }
 
-            var targetElement = evt.target as VisualElement;
-            if (targetElement is PrefabCardElement ||
-                targetElement is GroupFrameElement ||
-                (targetElement != null && targetElement.GetFirstAncestorOfType<PrefabCardElement>() != null) ||
-                (targetElement != null && targetElement.GetFirstAncestorOfType<GroupFrameElement>() != null))
+            var mouse = new Vector2(evt.localMousePosition.x, evt.localMousePosition.y);
+            if (TryHitCard(mouse) || TryHitGroup(mouse, out _, out _))
             {
                 return;
             }
 
-            var mouse = new Vector2(evt.localMousePosition.x, evt.localMousePosition.y);
             evt.menu.AppendAction("Create Group", _ => CreateGroupAt(mouse), DropdownMenuAction.AlwaysEnabled);
         }
 
@@ -1164,9 +1198,44 @@ namespace PrefabBoard.Editor.UI
                 {
                     continue;
                 }
+                else
+                {
+                    var headerHeightWorld = Mathf.Min(rect.height, GroupHeaderHeightPx / Mathf.Max(0.0001f, _board.zoom));
+                    var headerRect = new Rect(rect.xMin, rect.yMin, rect.width, headerHeightWorld);
+                    if (!headerRect.Contains(world))
+                    {
+                        continue;
+                    }
+                }
 
                 group = candidate;
                 return true;
+            }
+
+            return false;
+        }
+
+        private bool TryHitCard(Vector2 mouseScreen)
+        {
+            if (_board == null || _board.items == null || _board.items.Count == 0)
+            {
+                return false;
+            }
+
+            var world = ScreenToWorld(mouseScreen);
+            for (var i = _board.items.Count - 1; i >= 0; i--)
+            {
+                var item = _board.items[i];
+                if (item == null)
+                {
+                    continue;
+                }
+
+                var rect = new Rect(item.position, item.size);
+                if (rect.Contains(world))
+                {
+                    return true;
+                }
             }
 
             return false;
@@ -1419,10 +1488,12 @@ namespace PrefabBoard.Editor.UI
         {
             if (items == null)
             {
+                PrefabStageDropHandler.ClearPayload();
                 return false;
             }
 
             var objects = new List<UnityEngine.Object>();
+            var prefabPayload = new List<GameObject>();
             var paths = new List<string>();
             foreach (var item in items)
             {
@@ -1437,6 +1508,7 @@ namespace PrefabBoard.Editor.UI
                 }
 
                 objects.Add(prefabAsset);
+                prefabPayload.Add(prefabAsset);
                 var path = AssetDatabase.GetAssetPath(prefabAsset);
                 if (!string.IsNullOrEmpty(path))
                 {
@@ -1446,10 +1518,12 @@ namespace PrefabBoard.Editor.UI
 
             if (objects.Count == 0)
             {
+                PrefabStageDropHandler.ClearPayload();
                 return false;
             }
 
             DragAndDrop.PrepareStartDrag();
+            PrefabStageDropHandler.SetPayload(prefabPayload.ToArray());
             DragAndDrop.objectReferences = objects.ToArray();
             if (paths.Count > 0)
             {

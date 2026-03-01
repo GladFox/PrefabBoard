@@ -44,7 +44,7 @@ namespace PrefabBoard.Editor.Services
             }
 
             result = result
-                .OrderBy(board => board != null ? board.boardName : string.Empty, StringComparer.OrdinalIgnoreCase)
+                .OrderBy(board => board != null ? board.name : string.Empty, StringComparer.OrdinalIgnoreCase)
                 .ThenBy(board => board != null ? board.boardId : string.Empty, StringComparer.OrdinalIgnoreCase)
                 .ToList();
 

@@ -53,7 +53,27 @@ namespace PrefabBoard.Editor.UI
             LoadData();
         }
 
+        private void OnEnable()
+        {
+            EditorApplication.projectChanged += OnProjectChanged;
+        }
+
+        private void OnDisable()
+        {
+            EditorApplication.projectChanged -= OnProjectChanged;
+        }
+
         private void OnFocus()
+        {
+            if (_toolbar == null || _canvas == null || _outline == null)
+            {
+                return;
+            }
+
+            RefreshBindings();
+        }
+
+        private void OnProjectChanged()
         {
             if (_toolbar == null || _canvas == null || _outline == null)
             {

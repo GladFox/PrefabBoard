@@ -1,8 +1,7 @@
-﻿.pb-toolbar {
+.pb-toolbar {
     flex-direction: row;
     flex-wrap: nowrap;
     align-items: center;
-    gap: 6px;
     padding-left: 8px;
     padding-right: 8px;
     padding-top: 6px;
@@ -35,93 +34,126 @@
 }
 
 .pb-group {
-    border-left-width: 2px;
-    border-right-width: 2px;
-    border-top-width: 2px;
-    border-bottom-width: 2px;
-    border-left-color: rgba(73, 176, 255, 0.8);
-    border-right-color: rgba(73, 176, 255, 0.8);
-    border-top-color: rgba(73, 176, 255, 0.8);
-    border-bottom-color: rgba(73, 176, 255, 0.8);
-    background-color: rgba(73, 176, 255, 0.10);
+    border-left-width: 1px;
+    border-right-width: 1px;
+    border-top-width: 1px;
+    border-bottom-width: 1px;
+    border-left-color: rgba(188, 202, 217, 0.40);
+    border-right-color: rgba(188, 202, 217, 0.40);
+    border-top-color: rgba(188, 202, 217, 0.40);
+    border-bottom-color: rgba(188, 202, 217, 0.40);
+    background-color: transparent;
+}
+
+.pb-group-title-bar {
+    height: 18px;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    padding-left: 6px;
+    padding-right: 4px;
+    padding-top: 0;
+    padding-bottom: 0;
+    background-color: rgba(188, 202, 217, 0.08);
 }
 
 .pb-group-title {
-    height: 22px;
-    padding-left: 6px;
-    padding-right: 6px;
-    padding-top: 3px;
-    color: rgb(223, 237, 255);
-    unity-font-style: bold;
-    background-color: rgba(73, 176, 255, 0.25);
+    flex-grow: 1;
+    color: rgba(232, 236, 242, 0.90);
+    font-size: 10px;
+    -unity-text-align: middle-left;
+}
+
+.pb-group-title-menu {
+    width: 18px;
+    min-width: 18px;
+    height: 16px;
+    padding-left: 0;
+    padding-right: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+    margin-left: 4px;
+    border-left-width: 0;
+    border-right-width: 0;
+    border-top-width: 0;
+    border-bottom-width: 0;
+    background-color: transparent;
+    color: rgba(225, 232, 240, 0.90);
+    -unity-text-align: middle-center;
 }
 
 .pb-group-resize-handle {
     position: absolute;
-    background-color: rgba(255, 255, 255, 0.45);
+    background-color: rgba(255, 255, 255, 0.12);
+    opacity: 0;
 }
 
 .pb-group-resize-handle--left {
-    left: -4px;
-    top: 10px;
-    bottom: 10px;
-    width: 8px;
+    left: -3px;
+    top: 12px;
+    bottom: 12px;
+    width: 6px;
 }
 
 .pb-group-resize-handle--right {
-    right: -4px;
-    top: 10px;
-    bottom: 10px;
-    width: 8px;
+    right: -3px;
+    top: 12px;
+    bottom: 12px;
+    width: 6px;
 }
 
 .pb-group-resize-handle--top {
-    left: 10px;
-    right: 10px;
-    top: -4px;
-    height: 8px;
+    left: 12px;
+    right: 12px;
+    top: -3px;
+    height: 6px;
 }
 
 .pb-group-resize-handle--bottom {
-    left: 10px;
-    right: 10px;
-    bottom: -4px;
-    height: 8px;
+    left: 12px;
+    right: 12px;
+    bottom: -3px;
+    height: 6px;
 }
 
 .pb-group-resize-handle--top-left {
-    left: -4px;
-    top: -4px;
-    width: 10px;
-    height: 10px;
+    left: -3px;
+    top: -3px;
+    width: 8px;
+    height: 8px;
 }
 
 .pb-group-resize-handle--top-right {
-    right: -4px;
-    top: -4px;
-    width: 10px;
-    height: 10px;
+    right: -3px;
+    top: -3px;
+    width: 8px;
+    height: 8px;
 }
 
 .pb-group-resize-handle--bottom-left {
-    left: -4px;
-    bottom: -4px;
-    width: 10px;
-    height: 10px;
+    left: -3px;
+    bottom: -3px;
+    width: 8px;
+    height: 8px;
 }
 
 .pb-group-resize-handle--bottom-right {
-    right: -4px;
-    bottom: -4px;
-    width: 10px;
-    height: 10px;
+    right: -3px;
+    bottom: -3px;
+    width: 8px;
+    height: 8px;
 }
 
 .pb-group--selected {
-    border-left-color: rgba(255, 210, 62, 0.95);
-    border-right-color: rgba(255, 210, 62, 0.95);
-    border-top-color: rgba(255, 210, 62, 0.95);
-    border-bottom-color: rgba(255, 210, 62, 0.95);
+    border-left-color: rgba(232, 240, 248, 0.85);
+    border-right-color: rgba(232, 240, 248, 0.85);
+    border-top-color: rgba(232, 240, 248, 0.85);
+    border-bottom-color: rgba(232, 240, 248, 0.85);
+    background-color: transparent;
+}
+
+.pb-group--selected .pb-group-resize-handle {
+    opacity: 0.5;
 }
 
 .pb-card {
@@ -153,14 +185,14 @@
     height: auto;
     width: auto;
     margin-bottom: 0;
-    unity-background-scale-mode: scale-to-fit;
+    -unity-background-scale-mode: scale-to-fit;
     background-color: transparent;
     overflow: hidden;
 }
 
 .pb-card-title {
     color: rgb(243, 243, 243);
-    unity-font-style: bold;
+    -unity-font-style: bold;
     font-size: 11px;
     -unity-text-align: upper-left;
 }
@@ -242,14 +274,14 @@
     padding-top: 8px;
     padding-bottom: 4px;
     color: rgb(225, 233, 245);
-    unity-font-style: bold;
+    -unity-font-style: bold;
 }
 
 .pb-outline-home {
     margin-left: 8px;
     margin-right: 8px;
     margin-bottom: 8px;
-    unity-text-align: middle-center;
+    -unity-text-align: middle-center;
 }
 
 .pb-outline-scroll {
@@ -261,12 +293,12 @@
 
 .pb-outline-group {
     margin-top: 4px;
-    unity-text-align: middle-left;
+    -unity-text-align: middle-left;
 }
 
 .pb-outline-item {
     margin-top: 2px;
-    unity-text-align: middle-left;
+    -unity-text-align: middle-left;
 }
 
 .pb-outline-item--grouped {
@@ -276,7 +308,7 @@
 .pb-outline-ungrouped {
     margin-top: 8px;
     color: rgba(221, 229, 240, 0.95);
-    unity-font-style: bold;
+    -unity-font-style: bold;
 }
 
 .pb-outline-info {

@@ -28,6 +28,7 @@ namespace PrefabBoard.Editor.UI
 
             _boardPopup = new PopupField<string>("Board", new List<string> { "No Boards" }, 0);
             _boardPopup.style.minWidth = 200f;
+            ConfigureCompactLabel(_boardPopup);
             _boardPopup.RegisterValueChangedCallback(OnBoardPopupChanged);
 
             var newBoardButton = new Button(() => NewBoardRequested?.Invoke()) { text = "New" };
@@ -37,16 +38,18 @@ namespace PrefabBoard.Editor.UI
             _searchField.RegisterValueChangedCallback(evt => SearchChanged?.Invoke(evt.newValue));
 
             _gridToggle = new Toggle("Grid") { value = true };
+            ConfigureCompactLabel(_gridToggle);
             _gridToggle.RegisterValueChangedCallback(evt => GridToggled?.Invoke(evt.newValue));
 
             _snapToggle = new Toggle("Snap") { value = false };
+            ConfigureCompactLabel(_snapToggle);
             _snapToggle.RegisterValueChangedCallback(evt => SnapToggled?.Invoke(evt.newValue));
 
-            Add(_boardPopup);
-            Add(newBoardButton);
-            Add(_searchField);
-            Add(_gridToggle);
-            Add(_snapToggle);
+            AddToolbarElement(_boardPopup);
+            AddToolbarElement(newBoardButton);
+            AddToolbarElement(_searchField);
+            AddToolbarElement(_gridToggle);
+            AddToolbarElement(_snapToggle, false);
         }
 
         public void SetBoards(IReadOnlyList<PrefabBoardAsset> boards, int selectedIndex)
@@ -57,7 +60,7 @@ namespace PrefabBoard.Editor.UI
                 for (var i = 0; i < boards.Count; i++)
                 {
                     var board = boards[i];
-                    _boardNames.Add(board == null ? "Missing" : board.boardName);
+                    _boardNames.Add(board == null ? "Missing" : board.name);
                 }
             }
 
@@ -85,6 +88,29 @@ namespace PrefabBoard.Editor.UI
             {
                 BoardSelectionChanged?.Invoke(index);
             }
+        }
+
+        private static void ConfigureCompactLabel<T>(BaseField<T> field)
+        {
+            if (field == null || field.labelElement == null)
+            {
+                return;
+            }
+
+            field.labelElement.style.minWidth = 0f;
+            field.labelElement.style.width = StyleKeyword.Auto;
+            field.labelElement.style.marginRight = 4f;
+        }
+
+        private void AddToolbarElement(VisualElement element, bool withTrailingSpacing = true)
+        {
+            if (element == null)
+            {
+                return;
+            }
+
+            element.style.marginRight = withTrailingSpacing ? 6f : 0f;
+            Add(element);
         }
     }
 }
