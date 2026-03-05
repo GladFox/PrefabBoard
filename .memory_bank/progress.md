@@ -1,19 +1,20 @@
 ﻿# Progress
 
 ## What Works
-- PrefabBoard is packaged as UPM module `com.gladfox.prefabboard`.
-- Git URL install flow is documented and wired in Demo.
-- Package now includes required `.meta` files for immutable package assets.
-- BuiltIn preview mode now applies camera/canvas/scaler profile from rig prefab settings.
+- UPM package import path and metadata are in place.
+- BuiltIn preview mode now has dedicated configurable settings:
+  - base resolution
+  - camera background color
+- BuiltIn preview rendering pipeline reads these settings during rig/camera setup.
 
 ## Known Issues
-- Manual Unity validation is still required after package + BuiltIn changes.
-- Local Demo project may contain unrelated user-side settings changes not part of this fix.
+- Unity-side verification is still required for final visual parity and UX confirmation.
+- Local Demo project files (`manifest/project settings`) may change during editor operations and are not automatically included in targeted fix commits.
 
 ## Solution Evolution
-- Added missing package root metadata to remove immutable-folder import warnings.
-- Extended BuiltIn preview setup with rig-profile override for parity with `Rig.prefab` behavior.
+- Extended settings model with BuiltIn-only preview controls.
+- Wired BuiltIn settings into resolution and camera background resolution logic in preview renderer.
 
 ## Change Control
-- last_checked_commit: 1887d56
+- last_checked_commit: 0abebcb
 - last_checked_date: 2026-03-05

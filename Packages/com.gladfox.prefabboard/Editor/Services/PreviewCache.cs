@@ -495,6 +495,12 @@ namespace PrefabBoard.Editor.Services
         private static Vector2Int ResolveEffectiveResolutionSize(Vector2 editorResolution)
         {
             var fallback = SanitizeCanvasSize(editorResolution, new Vector2Int(DefaultResolutionWidth, DefaultResolutionHeight));
+            var settings = PreviewRigSettingsProvider.TryGetSettings();
+            if (settings != null && settings.rigSource == PreviewRigSource.BuiltIn)
+            {
+                return SanitizeCanvasSize(settings.builtInBaseResolution, fallback);
+            }
+
             if (TryGetTemplateReferenceResolution(out var templateResolution))
             {
                 return SanitizeCanvasSize(templateResolution, fallback);
@@ -861,7 +867,7 @@ namespace PrefabBoard.Editor.Services
                 var camera = cameraObject.AddComponent<Camera>();
                 var settings = PreviewRigSettingsProvider.TryGetSettings();
                 camera.clearFlags = CameraClearFlags.SolidColor;
-                camera.backgroundColor = settings != null ? settings.cameraBackground : new Color(0.16f, 0.16f, 0.16f, 1f);
+                camera.backgroundColor = ResolvePreviewCameraBackground(settings, settings != null && settings.rigSource == PreviewRigSource.BuiltIn);
                 camera.orthographic = true;
                 camera.nearClipPlane = settings != null ? Mathf.Max(0.001f, settings.nearClipPlane) : 0.01f;
                 camera.farClipPlane = settings != null ? Mathf.Max(camera.nearClipPlane + 0.1f, settings.farClipPlane) : 1000f;
@@ -1137,7 +1143,7 @@ namespace PrefabBoard.Editor.Services
             if (sourceCamera != null)
             {
                 targetCamera.clearFlags = sourceCamera.clearFlags;
-                targetCamera.backgroundColor = sourceCamera.backgroundColor;
+                targetCamera.backgroundColor = ResolvePreviewCameraBackground(settings, true);
                 targetCamera.nearClipPlane = Mathf.Max(0.001f, sourceCamera.nearClipPlane);
                 targetCamera.farClipPlane = Mathf.Max(targetCamera.nearClipPlane + 0.1f, sourceCamera.farClipPlane);
                 targetCamera.orthographic = sourceCamera.orthographic;
@@ -1207,14 +1213,14 @@ namespace PrefabBoard.Editor.Services
             Camera camera,
             Vector2Int canvasSize,
             PreviewRigSettingsAsset settings,
-            bool _)
+            bool builtInRig)
         {
             if (camera == null)
             {
                 return;
             }
 
-            var background = settings != null ? settings.cameraBackground : new Color(0.16f, 0.16f, 0.16f, 1f);
+            var background = ResolvePreviewCameraBackground(settings, builtInRig);
             var nearClip = settings != null ? Mathf.Max(0.001f, settings.nearClipPlane) : 0.01f;
             var farClip = settings != null ? Mathf.Max(nearClip + 0.1f, settings.farClipPlane) : 200f;
 
@@ -1233,6 +1239,21 @@ namespace PrefabBoard.Editor.Services
             camera.transform.localPosition = new Vector3(0f, 0f, -10f);
             camera.transform.localRotation = Quaternion.identity;
             camera.transform.localScale = Vector3.one;
+        }
+
+        private static Color ResolvePreviewCameraBackground(PreviewRigSettingsAsset settings, bool builtInRig)
+        {
+            if (settings == null)
+            {
+                return new Color(0.16f, 0.16f, 0.16f, 1f);
+            }
+
+            if (builtInRig)
+            {
+                return settings.builtInCameraBackground;
+            }
+
+            return settings.cameraBackground;
         }
 
         private static void ConfigurePreviewCanvas(

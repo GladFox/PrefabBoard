@@ -14,6 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp-Editor::PrefabBoard.Editor.Data.PreviewRigSettingsAsset
   rigSource: 1
   rigPrefab: {fileID: 3714740684596390783, guid: b09fdab36e3dc1547920516cc1e8e760, type: 3}
+  builtInBaseResolution: {x: 1920, y: 1080}
+  builtInCameraBackground: {r: 0.16, g: 0.16, b: 0.16, a: 1}
   cameraPath: Rig/Camera
   canvasPath: Rig/Canvas
   contentPath: Rig/Canvas/Content

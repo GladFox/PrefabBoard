@@ -1,5 +1,21 @@
 # Release Notes
 
+## v0.2.1 - March 5, 2026
+
+### Highlights
+- Added missing Unity `.meta` files for package root assets:
+  - `Packages/com.gladfox.prefabboard.meta`
+  - `Packages/com.gladfox.prefabboard/Editor.meta`
+  - `Packages/com.gladfox.prefabboard/package.json.meta`
+  - `Packages/com.gladfox.prefabboard/README.md.meta`
+- Added Built-In preview rig settings in `PreviewRigSettingsAsset`:
+  - `builtInBaseResolution`
+  - `builtInCameraBackground`
+- Updated preview pipeline so Built-In mode uses:
+  - configurable base resolution from settings
+  - configurable camera background color from settings
+  - built-in rig profile parity with configured `Rig.prefab`
+
 ## v0.2.0 - March 5, 2026
 
 ### Highlights

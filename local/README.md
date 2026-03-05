@@ -132,6 +132,10 @@ Canvas и карточки клиппируются по своим границ
 - `BuiltIn`: камера/canvas/content создаются кодом (fallback по умолчанию)
 - `PrefabTemplate`: риг берётся из prefab (камера/canvas/content резолвятся по путям в settings)
 
+Дополнительно для `BuiltIn` режима в `PreviewRigSettings`:
+- `builtInBaseResolution` — базовое разрешение холста/рендера;
+- `builtInCameraBackground` — цвет фона камеры превью.
+
 ## Persistence and Undo
 Изменения данных выполняются через:
 - `Undo.RecordObject(...)`

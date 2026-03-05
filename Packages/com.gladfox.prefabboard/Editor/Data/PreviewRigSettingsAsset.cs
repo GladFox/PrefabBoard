@@ -13,6 +13,9 @@ namespace PrefabBoard.Editor.Data
     {
         public PreviewRigSource rigSource = PreviewRigSource.BuiltIn;
         public GameObject rigPrefab;
+        [Header("Built-In Rig Settings")]
+        public Vector2Int builtInBaseResolution = new Vector2Int(1920, 1080);
+        public Color builtInCameraBackground = new Color(0.16f, 0.16f, 0.16f, 1f);
 
         [Tooltip("Relative path under rig prefab root. Leave empty to use first Camera in hierarchy.")]
         public string cameraPath = string.Empty;
@@ -23,6 +26,7 @@ namespace PrefabBoard.Editor.Data
         [Tooltip("Relative path under rig prefab root. Leave empty to use child named Content or canvas root.")]
         public string contentPath = "Content";
 
+        [Header("Shared Camera Settings")]
         public Color cameraBackground = new Color(0.16f, 0.16f, 0.16f, 1f);
         public float nearClipPlane = 0.01f;
         public float farClipPlane = 200f;
