@@ -41,7 +41,7 @@ Editor-only инструмент `Prefab Board` на Unity UI Toolkit:
 - `Packages/com.gladfox.prefabboard/Editor/Styles`
   - `PrefabBoard.uss`
 - `Demo/`
-  - Unity demo project consuming `com.gladfox.prefabboard` via local file dependency
+  - Unity demo project consuming `com.gladfox.prefabboard` via Git UPM dependency
   - demo assets, boards and preview rig settings in `Demo/Assets/...`
 
 ## Data Model

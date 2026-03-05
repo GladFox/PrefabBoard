@@ -7,9 +7,9 @@
       "dependencies": {}
     },
     "com.gladfox.prefabboard": {
-      "version": "file:../../Packages/com.gladfox.prefabboard",
+      "version": "https://github.com/GladFox/PrefabBoard.git?path=/Packages/com.gladfox.prefabboard#main",
       "depth": 0,
-      "source": "local",
+      "source": "git",
       "dependencies": {}
     },
     "com.unity.ai.assistant": {

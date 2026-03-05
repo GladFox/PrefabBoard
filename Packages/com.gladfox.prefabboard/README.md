@@ -2,14 +2,14 @@
 
 `com.gladfox.prefabboard` contains the editor implementation of PrefabBoard.
 
-## Installation (local file package)
+## Installation (Git URL)
 
 In Unity project `Packages/manifest.json`:
 
 ```json
 {
   "dependencies": {
-    "com.gladfox.prefabboard": "file:../../Packages/com.gladfox.prefabboard"
+    "com.gladfox.prefabboard": "https://github.com/GladFox/PrefabBoard.git?path=/Packages/com.gladfox.prefabboard#main"
   }
 }
 ```

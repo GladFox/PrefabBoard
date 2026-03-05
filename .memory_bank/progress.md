@@ -2,8 +2,9 @@
 
 ## What Works
 - PrefabBoard implementation is now a standalone UPM package (`com.gladfox.prefabboard`).
-- Unity project tracked structure is converted to `Demo/` and points to local package dependency.
-- Core editor scripts/assets moved with meta files to preserve serialization GUID continuity.
+- Unity project tracked structure is converted to `Demo/`.
+- User-facing install flow now uses Git URL package dependency.
+- Demo project dependency also uses the same Git URL package reference.
 
 ## Known Issues
 - Manual Unity validation is required after migration (package resolution + runtime editor interactions).
@@ -12,8 +13,8 @@
 ## Solution Evolution
 - Replaced monolithic project-embedded tool layout with package + demo split.
 - Added package-level metadata (`package.json`, package README).
-- Added package stylesheet path fallback logic for backward compatibility.
+- Updated docs + demo manifest from local file package to Git URL package install.
 
 ## Change Control
-- last_checked_commit: ec347ae
+- last_checked_commit: e264865
 - last_checked_date: 2026-03-05
