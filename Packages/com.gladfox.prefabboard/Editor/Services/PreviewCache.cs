@@ -977,6 +977,7 @@ namespace PrefabBoard.Editor.Services
             var canvas = rig.canvasObject.GetComponent<Canvas>();
             var scaler = rig.canvasObject.GetComponent<CanvasScaler>();
             ConfigurePreviewCanvas(rig.canvasRect, canvas, scaler, rig.camera, canvasSize, settings);
+            ApplyBuiltInTemplateRigProfile(rig.camera, rig.canvasRect, canvas, scaler, settings, canvasSize);
 
             rig.contentObject = new GameObject("Content", typeof(RectTransform));
             rig.contentObject.hideFlags = hidden ? HideFlags.HideAndDontSave : HideFlags.None;
@@ -1111,6 +1112,95 @@ namespace PrefabBoard.Editor.Services
             }
 
             return root.GetComponentInChildren<T>(true);
+        }
+
+        private static void ApplyBuiltInTemplateRigProfile(
+            Camera targetCamera,
+            RectTransform targetCanvasRect,
+            Canvas targetCanvas,
+            CanvasScaler targetScaler,
+            PreviewRigSettingsAsset settings,
+            Vector2Int canvasSize)
+        {
+            if (targetCamera == null || targetCanvas == null || targetScaler == null || settings == null || settings.rigPrefab == null)
+            {
+                return;
+            }
+
+            var sourceRoot = settings.rigPrefab.transform;
+            if (sourceRoot == null)
+            {
+                return;
+            }
+
+            var sourceCamera = ResolveComponent<Camera>(sourceRoot, settings.cameraPath);
+            if (sourceCamera != null)
+            {
+                targetCamera.clearFlags = sourceCamera.clearFlags;
+                targetCamera.backgroundColor = sourceCamera.backgroundColor;
+                targetCamera.nearClipPlane = Mathf.Max(0.001f, sourceCamera.nearClipPlane);
+                targetCamera.farClipPlane = Mathf.Max(targetCamera.nearClipPlane + 0.1f, sourceCamera.farClipPlane);
+                targetCamera.orthographic = sourceCamera.orthographic;
+                targetCamera.fieldOfView = sourceCamera.fieldOfView;
+                if (sourceCamera.orthographic)
+                {
+                    targetCamera.orthographicSize = Mathf.Max(0.01f, sourceCamera.orthographicSize);
+                }
+
+                targetCamera.transform.localPosition = sourceCamera.transform.localPosition;
+                targetCamera.transform.localRotation = sourceCamera.transform.localRotation;
+                targetCamera.transform.localScale = sourceCamera.transform.localScale;
+
+                targetCamera.cullingMask = settings.forceUiLayer ? (1 << UiLayer) : sourceCamera.cullingMask;
+            }
+
+            var sourceCanvas = ResolveComponent<Canvas>(sourceRoot, settings.canvasPath);
+            if (sourceCanvas == null)
+            {
+                return;
+            }
+
+            targetCanvas.renderMode = sourceCanvas.renderMode;
+            targetCanvas.pixelPerfect = sourceCanvas.pixelPerfect;
+            targetCanvas.planeDistance = Mathf.Max(0.01f, sourceCanvas.planeDistance);
+            targetCanvas.worldCamera = targetCamera;
+
+            var sourceCanvasRect = sourceCanvas.GetComponent<RectTransform>();
+            if (sourceCanvasRect != null && targetCanvasRect != null)
+            {
+                targetCanvasRect.anchorMin = sourceCanvasRect.anchorMin;
+                targetCanvasRect.anchorMax = sourceCanvasRect.anchorMax;
+                targetCanvasRect.pivot = sourceCanvasRect.pivot;
+                targetCanvasRect.anchoredPosition = sourceCanvasRect.anchoredPosition;
+                targetCanvasRect.localPosition = sourceCanvasRect.localPosition;
+                targetCanvasRect.localRotation = sourceCanvasRect.localRotation;
+                targetCanvasRect.localScale = sourceCanvasRect.localScale;
+
+                var sourceSize = sourceCanvasRect.sizeDelta;
+                if (Mathf.Abs(sourceSize.x) < 1f && Mathf.Abs(sourceSize.y) < 1f)
+                {
+                    targetCanvasRect.sizeDelta = new Vector2(canvasSize.x, canvasSize.y);
+                }
+                else
+                {
+                    targetCanvasRect.sizeDelta = sourceSize;
+                }
+            }
+
+            var sourceScaler = sourceCanvas.GetComponent<CanvasScaler>();
+            if (sourceScaler != null)
+            {
+                targetScaler.uiScaleMode = sourceScaler.uiScaleMode;
+                targetScaler.referencePixelsPerUnit = sourceScaler.referencePixelsPerUnit;
+                targetScaler.scaleFactor = sourceScaler.scaleFactor;
+                targetScaler.referenceResolution = sourceScaler.referenceResolution;
+                targetScaler.screenMatchMode = sourceScaler.screenMatchMode;
+                targetScaler.matchWidthOrHeight = sourceScaler.matchWidthOrHeight;
+                targetScaler.physicalUnit = sourceScaler.physicalUnit;
+                targetScaler.fallbackScreenDPI = sourceScaler.fallbackScreenDPI;
+                targetScaler.defaultSpriteDPI = sourceScaler.defaultSpriteDPI;
+                targetScaler.dynamicPixelsPerUnit = sourceScaler.dynamicPixelsPerUnit;
+            }
         }
 
         private static void ConfigurePreviewCamera(
