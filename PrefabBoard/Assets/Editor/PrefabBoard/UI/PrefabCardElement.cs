@@ -14,7 +14,7 @@ namespace PrefabBoard.Editor.UI
 
         public event Action<PrefabCardElement, PointerDownEvent> PrimaryPointerDown;
         public event Action<PrefabCardElement> DoubleClicked;
-        public event Action<PrefabCardElement> ExternalDragRequested;
+        public event Action<PrefabCardElement, PointerDownEvent> ExternalDragRequested;
         public event Action<PrefabCardElement, ContextualMenuPopulateEvent> ContextMenuPopulateRequested;
 
         public PrefabCardElement(string itemId)
@@ -50,6 +50,14 @@ namespace PrefabBoard.Editor.UI
 
         private void OnPointerDown(PointerDownEvent evt)
         {
+            if (evt.button == 1)
+            {
+                // RMB: drag card within the board.
+                PrimaryPointerDown?.Invoke(this, evt);
+                evt.StopPropagation();
+                return;
+            }
+
             if (evt.button != 0)
             {
                 return;
@@ -64,12 +72,14 @@ namespace PrefabBoard.Editor.UI
 
             if (evt.ctrlKey || evt.commandKey)
             {
-                ExternalDragRequested?.Invoke(this);
+                // Ctrl/Cmd+LMB: drag card within the board (same as RMB).
+                PrimaryPointerDown?.Invoke(this, evt);
                 evt.StopPropagation();
                 return;
             }
 
-            PrimaryPointerDown?.Invoke(this, evt);
+            // LMB: external drag — drop prefab onto scene / hierarchy.
+            ExternalDragRequested?.Invoke(this, evt);
             evt.StopPropagation();
         }
 

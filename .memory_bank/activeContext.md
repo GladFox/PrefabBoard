@@ -1,34 +1,17 @@
-# Active Context
+﻿# Active Context
 
-## Текущие задачи
-1. Провести smoke в Unity после правок верхнего toolbar.
-2. Проверить, что dropdown `Board` показывает все `PrefabBoardAsset` из проекта.
-3. Проверить автo-refresh списка досок при возврате фокуса в окно.
+## Current Tasks
+1. Validate `Ctrl+LMB` external drag from board cards into Scene/Hierarchy/Prefab Mode.
+2. Validate green ghost behavior while drag stays inside board.
+3. Ensure board/group context menus remain unaffected.
 
-## Последние изменения
-- Исправлена верхняя панель: убран конфликт label/control в toolbar.
-- Удалено поле `Name` из toolbar.
-- Toolbar переведен в `nowrap`.
-- Поиск досок переведен на `AssetDatabase.FindAssets("t:PrefabBoardAsset")` по всему проекту.
-- В `PrefabBoardWindow` добавлен `OnFocus()` для refresh bindings.
+## Recent Changes
+- External drag fallback by window-exit now supports both `Mode.DragItems` and `Mode.DragExternal`.
+- For `Mode.DragExternal` fallback uses `TryStartExternalDragFromPreview()`.
+- This restores drag start when pointer leaves board window before canvas receives an outside move event.
+- Build passed: `dotnet build PrefabBoard/PrefabBoard.sln`.
 
-## Следующие шаги
-1. Если UX toolbar ок — оставить текущий compact layout.
-2. При необходимости добавить явную сортировку/группировку досок по папкам.
-
-## План (REQUIREMENTS_OWNER)
-1. Починить визуальное выравнивание контролов в верхней панели.
-2. Обеспечить полный список досок в dropdown `Board`.
-
-## Стратегия (ARCHITECT)
-- Минимизировать элементы в toolbar, чтобы избежать переносов и конфликтов label-контрол.
-- Источник данных списка досок — глобальный поиск `PrefabBoardAsset`.
-
-## REVIEWER checklist
-- Toolbar без рассинхрона caption/control.
-- `Board` dropdown видит все доски проекта.
-- Refresh списка досок срабатывает при `OnFocus`.
-
-## QA_TESTER заметки
-- Локальная `dotnet build` успешна.
-- Нужна ручная проверка в Unity Editor.
+## Next Steps
+1. Unity smoke test for Ctrl+LMB card drag to Scene and Prefab Mode.
+2. If still fails, add temporary debug logs around `StartExternalDrag` and payload presence.
+3. Commit after confirmation.

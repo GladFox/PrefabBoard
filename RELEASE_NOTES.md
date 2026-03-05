@@ -1,5 +1,25 @@
 # Release Notes
 
+## v0.1.1 - March 5, 2026
+
+### Highlights
+- Improved external prefab drag pipeline from board cards:
+  - stabilized `Ctrl/Cmd + LMB` drag-out flow
+  - better handoff to Scene/Hierarchy/Prefab Mode targets
+  - refined drag ghost/preview behavior during external drag candidate mode
+- Prefab stage drop handling updates:
+  - safer payload handling for board-origin drags
+  - improved compatibility for dropping into open prefab editing context
+- Canvas interaction cleanup:
+  - adjusted right-click/context-menu behavior around drag gestures
+  - reduced accidental menu conflicts during drag scenarios
+- UI and style cleanup:
+  - updated board/card/group interaction code paths
+  - style cleanups in `PrefabBoard.uss`
+
+### Notes
+- Current recommended external drag gesture remains `Ctrl/Cmd + LMB` for maximum stability in Unity Editor.
+
 ## v0.1.0 - February 27, 2026
 
 ### Highlights

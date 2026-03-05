@@ -11,7 +11,7 @@ namespace PrefabBoard.Editor.UI
 {
     public sealed class BoardCanvasElement : VisualElement
     {
-        private enum Mode { None, Panning, DragItems, DragGroup, ResizeGroup, BoxSelect }
+        private enum Mode { None, Panning, DragItems, DragExternal, DragGroup, ResizeGroup, BoxSelect }
 
         private readonly VisualElement _groupsLayer;
         private readonly VisualElement _itemsLayer;
@@ -41,11 +41,16 @@ namespace PrefabBoard.Editor.UI
         private string _draggingGroupId;
         private GroupFrameElement.ResizeHandle _groupResizeHandle = GroupFrameElement.ResizeHandle.BottomRight;
         private string _dragPrimaryItemId;
+        private int _dragMouseButton = -1;
+        private Vector2 _externalGhostSize;
+        private Vector2 _externalGhostPointerOffset;
         private bool _spacePressed;
         private bool _pendingPreview;
         private bool _previewInvalidationSubscribed;
         private bool _undoRedoSubscribed;
         private Vector2 _lastPreviewResolution;
+        private double _suppressContextMenuUntil;
+        private bool _isPointerCaptured;
 
         public event Action BoardDataChanged;
 
@@ -78,6 +83,7 @@ namespace PrefabBoard.Editor.UI
             RegisterCallback<KeyUpEvent>(OnKeyUp);
             RegisterCallback<DragUpdatedEvent>(OnDragUpdated);
             RegisterCallback<DragPerformEvent>(OnDragPerform);
+            RegisterCallback<MouseLeaveWindowEvent>(OnMouseLeaveWindow, TrickleDown.TrickleDown);
             RegisterCallback<AttachToPanelEvent>(OnAttachToPanel);
             RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
 
@@ -343,8 +349,6 @@ namespace PrefabBoard.Editor.UI
                 var ve = new GroupFrameElement(group.id);
                 ve.PrimaryPointerDown += OnGroupPointerDown;
                 ve.ResizePointerDown += OnGroupResizePointerDown;
-                ve.RenameRequested += OnGroupRenameRequested;
-                ve.ContextMenuPopulateRequested += OnGroupContextMenu;
                 _groups[group.id] = ve;
                 _groupsLayer.Add(ve);
             }
@@ -480,7 +484,8 @@ namespace PrefabBoard.Editor.UI
 
             if (_mode == Mode.DragItems)
             {
-                if (IsOutsideCanvas(mouse) && TryStartExternalDragFromCurrentDrag())
+                // RMB is board-drag only — don't attempt system DnD when leaving canvas.
+                if (_dragMouseButton != 1 && IsOutsideCanvas(mouse) && TryStartExternalDragFromCurrentDrag())
                 {
                     ClearDragState();
                     RefreshVisualState();
@@ -496,6 +501,24 @@ namespace PrefabBoard.Editor.UI
                 }
                 BoardUndo.MarkDirty(_board);
                 RefreshVisualState();
+                evt.StopPropagation();
+                return;
+            }
+
+            if (_mode == Mode.DragExternal)
+            {
+                UpdateExternalDragGhost(mouse);
+                // RMB: DragAndDrop.StartDrag() does not work with RMB on Windows —
+                // Unity's SceneView fires a context menu on RMB-release regardless.
+                // Keep the ghost moving inside the window; let OnMouseLeaveWindow clean up.
+                if (_dragMouseButton != 1 && IsOutsideCanvas(mouse) && TryStartExternalDragFromPreview())
+                {
+                    ClearDragState();
+                    RefreshVisualState();
+                    evt.StopPropagation();
+                    return;
+                }
+
                 evt.StopPropagation();
                 return;
             }
@@ -549,6 +572,16 @@ namespace PrefabBoard.Editor.UI
                     if (!(evt.shiftKey || evt.ctrlKey || evt.commandKey)) _selectedItems.Clear();
                     foreach (var id in SelectByBox(rect)) _selectedItems.Add(id);
                     _selectedGroupId = null;
+                }
+            }
+
+            // After RMB board-drag, suppress any context menu that UIToolkit might fire on release.
+            if (_mode == Mode.DragItems && _dragMouseButton == 1)
+            {
+                var upMouse = new Vector2(evt.localPosition.x, evt.localPosition.y);
+                if ((upMouse - _mouseStart).sqrMagnitude > 25f)
+                {
+                    SuppressNextContextMenu();
                 }
             }
 
@@ -617,7 +650,7 @@ namespace PrefabBoard.Editor.UI
             if (_board == null) return;
             if (PrefabStageDropHandler.HasPayload())
             {
-                DragAndDrop.visualMode = DragAndDropVisualMode.Rejected;
+                DragAndDrop.visualMode = DragAndDropVisualMode.Copy;
                 HideDragGhost();
                 evt.StopPropagation();
                 return;
@@ -695,9 +728,17 @@ namespace PrefabBoard.Editor.UI
             _mode = Mode.DragItems;
             _pointerId = evt.pointerId;
             _dragPrimaryItemId = card.ItemId;
+            _dragMouseButton = evt.button;
+            if (_pointerId >= 0)
+            {
+                this.CapturePointer(_pointerId);
+                _isPointerCaptured = true;
+            }
             var pointerOnCard = new Vector2(evt.localPosition.x, evt.localPosition.y);
             var canvasPointer = card.ChangeCoordinatesTo(this, pointerOnCard);
-            _dragWorldStart = ScreenToWorld(new Vector2(canvasPointer.x, canvasPointer.y));
+            var canvasMouse = new Vector2(canvasPointer.x, canvasPointer.y);
+            _mouseStart = canvasMouse;
+            _dragWorldStart = ScreenToWorld(canvasMouse);
             BoardUndo.Record(_board, "Move Cards");
             RefreshVisualState();
         }
@@ -711,54 +752,78 @@ namespace PrefabBoard.Editor.UI
             AssetDatabase.OpenAsset(asset);
         }
 
-        private void OnCardExternalDrag(PrefabCardElement card)
+        private void OnCardExternalDrag(PrefabCardElement card, PointerDownEvent evt)
         {
-            var item = FindItem(card.ItemId);
-            if (item == null) return;
-            StartExternalDrag(new[] { item });
-        }
-
-        private void OnCardContextMenu(PrefabCardElement card, ContextualMenuPopulateEvent evt)
-        {
-            evt.menu.AppendAction("Ping Asset", _ => PingCard(card.ItemId), DropdownMenuAction.AlwaysEnabled);
-            evt.menu.AppendAction("Open Prefab", _ => OpenCard(card.ItemId), DropdownMenuAction.AlwaysEnabled);
-            evt.menu.AppendSeparator();
-            evt.menu.AppendAction("Duplicate Card", _ => DuplicateCards(new[] { card.ItemId }), DropdownMenuAction.AlwaysEnabled);
-            evt.menu.AppendAction("Delete", _ => DeleteCards(new[] { card.ItemId }), DropdownMenuAction.AlwaysEnabled);
-            evt.menu.AppendSeparator();
-            evt.menu.AppendAction("Create Group From Selection", _ => CreateGroupFromSelection(), DropdownMenuAction.AlwaysEnabled);
-        }
-
-        private void OnGroupContextMenu(GroupFrameElement groupElement, ContextualMenuPopulateEvent evt)
-        {
-            evt.menu.AppendAction("Rename Group", _ => RenameGroup(groupElement.GroupId), DropdownMenuAction.AlwaysEnabled);
-            evt.menu.AppendSeparator();
-            evt.menu.AppendAction("Delete Group", _ => DeleteGroup(groupElement.GroupId), DropdownMenuAction.AlwaysEnabled);
-        }
-
-        private void OnGroupRenameRequested(GroupFrameElement groupElement)
-        {
-            if (_board == null || groupElement == null)
+            if (_board == null || card == null || evt == null)
             {
                 return;
             }
 
-            _selectedItems.Clear();
-            _selectedGroupId = groupElement.GroupId;
-            RefreshVisualState();
-            RenameGroup(groupElement.GroupId);
+            // LMB only: external drop onto scene / hierarchy / prefab stage.
+            if (evt.button != 0)
+            {
+                return;
+            }
+
+            var item = FindItem(card.ItemId);
+            if (item == null)
+            {
+                return;
+            }
+
+            Focus();
+            SelectItem(card.ItemId, evt.shiftKey || evt.ctrlKey || evt.commandKey);
+            _mode = Mode.DragExternal;
+            _pointerId = evt.pointerId;
+            _dragPrimaryItemId = card.ItemId;
+            _dragMouseButton = evt.button;
+            if (_pointerId >= 0)
+            {
+                this.CapturePointer(_pointerId);
+                _isPointerCaptured = true;
+            }
+            var pointerOnCard = new Vector2(evt.localPosition.x, evt.localPosition.y);
+            var canvasPointer = card.ChangeCoordinatesTo(this, pointerOnCard);
+            var mouse = new Vector2(canvasPointer.x, canvasPointer.y);
+            _mouseStart = mouse;
+
+            var itemScreenPos = WorldToScreen(item.position);
+            _externalGhostSize = item.size * _board.zoom;
+            _externalGhostPointerOffset = mouse - itemScreenPos;
+            _externalGhostPointerOffset.x = Mathf.Clamp(_externalGhostPointerOffset.x, 0f, Mathf.Max(1f, _externalGhostSize.x));
+            _externalGhostPointerOffset.y = Mathf.Clamp(_externalGhostPointerOffset.y, 0f, Mathf.Max(1f, _externalGhostSize.y));
+            UpdateExternalDragGhost(mouse);
+        }
+
+        private void OnCardContextMenu(PrefabCardElement card, ContextualMenuPopulateEvent evt)
+        {
+            evt.StopPropagation();
         }
 
         private void OnCanvasContextMenu(ContextualMenuPopulateEvent evt)
         {
+            if (ConsumeSuppressedContextMenu())
+            {
+                evt.StopPropagation();
+                return;
+            }
+
             if (_board == null)
             {
                 return;
             }
 
             var mouse = new Vector2(evt.localMousePosition.x, evt.localMousePosition.y);
-            if (TryHitCard(mouse) || TryHitGroup(mouse, out _, out _))
+            if (TryHitCard(mouse))
             {
+                return;
+            }
+
+            if (TryHitGroupRect(mouse, out var group))
+            {
+                evt.menu.AppendAction("Переименовать", _ => RenameGroup(group.id), DropdownMenuAction.AlwaysEnabled);
+                evt.menu.AppendSeparator();
+                evt.menu.AppendAction("Delete Group", _ => DeleteGroup(group.id), DropdownMenuAction.AlwaysEnabled);
                 return;
             }
 
@@ -1241,6 +1306,33 @@ namespace PrefabBoard.Editor.UI
             return false;
         }
 
+        private bool TryHitGroupRect(Vector2 mouseScreen, out BoardGroupData group)
+        {
+            group = null;
+            if (_board == null || _board.groups == null || _board.groups.Count == 0)
+            {
+                return false;
+            }
+
+            var world = ScreenToWorld(mouseScreen);
+            for (var i = _board.groups.Count - 1; i >= 0; i--)
+            {
+                var candidate = _board.groups[i];
+                if (candidate == null)
+                {
+                    continue;
+                }
+
+                if (candidate.rect.Contains(world))
+                {
+                    group = candidate;
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         private Rect BuildGroupRect()
         {
             if (_selectedItems.Count == 0)
@@ -1402,11 +1494,19 @@ namespace PrefabBoard.Editor.UI
 
         private void ClearDragState()
         {
+            if (_isPointerCaptured)
+            {
+                if (_pointerId >= 0) this.ReleasePointer(_pointerId);
+                _isPointerCaptured = false;
+            }
             _mode = Mode.None;
             _pointerId = -1;
             _draggingGroupId = null;
             _groupResizeHandle = GroupFrameElement.ResizeHandle.BottomRight;
             _dragPrimaryItemId = null;
+            _dragMouseButton = -1;
+            _externalGhostSize = Vector2.zero;
+            _externalGhostPointerOffset = Vector2.zero;
             _dragStartItemPos.Clear();
             _selectionOverlay.SetVisible(false);
             HideDragGhost();
@@ -1442,18 +1542,34 @@ namespace PrefabBoard.Editor.UI
             return StartExternalDrag(dragItems);
         }
 
-        private static bool IsPrimaryMouseButtonPressed()
+        private static bool IsMouseButtonPressed(int button)
         {
 #if ENABLE_INPUT_SYSTEM
             var mouse = UnityEngine.InputSystem.Mouse.current;
-            if (mouse != null && mouse.leftButton.isPressed)
+            if (mouse != null)
             {
-                return true;
+                switch (button)
+                {
+                    case 0:
+                        if (mouse.leftButton.isPressed) return true;
+                        break;
+                    case 1:
+                        if (mouse.rightButton.isPressed) return true;
+                        break;
+                    case 2:
+                        if (mouse.middleButton.isPressed) return true;
+                        break;
+                }
             }
 #endif
 
 #if ENABLE_LEGACY_INPUT_MANAGER
-            return Input.GetMouseButton(0);
+            if (button >= 0 && button <= 2)
+            {
+                return Input.GetMouseButton(button);
+            }
+
+            return false;
 #else
             return false;
 #endif
@@ -1461,12 +1577,20 @@ namespace PrefabBoard.Editor.UI
 
         private void TryStartExternalDragByWindowExit()
         {
-            if (_mode != Mode.DragItems || _pointerId < 0 || _dragStartItemPos.Count == 0)
+            if (_mode != Mode.DragItems && _mode != Mode.DragExternal)
             {
                 return;
             }
 
-            if (!IsPrimaryMouseButtonPressed())
+            if (!IsMouseButtonPressed(_dragMouseButton))
+            {
+                ClearDragState();
+                RefreshVisualState();
+                return;
+            }
+
+            // RMB: no system drag — OnMouseLeaveWindow already handles cleanup.
+            if (_dragMouseButton == 1)
             {
                 return;
             }
@@ -1477,7 +1601,60 @@ namespace PrefabBoard.Editor.UI
                 return;
             }
 
-            if (TryStartExternalDragFromCurrentDrag())
+            var started = _mode == Mode.DragExternal
+                ? TryStartExternalDragFromPreview()
+                : TryStartExternalDragFromCurrentDrag();
+
+            if (started)
+            {
+                ClearDragState();
+                RefreshVisualState();
+            }
+        }
+
+        private void SuppressNextContextMenu()
+        {
+            _suppressContextMenuUntil = EditorApplication.timeSinceStartup + 0.5d;
+        }
+
+        private bool ConsumeSuppressedContextMenu()
+        {
+            if (EditorApplication.timeSinceStartup > _suppressContextMenuUntil)
+            {
+                return false;
+            }
+
+            _suppressContextMenuUntil = 0d;
+            return true;
+        }
+
+        // Fires (within an event-handler context) when the mouse leaves the editor window.
+        // This is the primary trigger for the system drag, because DragAndDrop.StartDrag()
+        // must be called from within an event handler to properly initiate a native drag.
+        private void OnMouseLeaveWindow(MouseLeaveWindowEvent evt)
+        {
+            if (_mode != Mode.DragItems && _mode != Mode.DragExternal) return;
+
+            if (!IsMouseButtonPressed(_dragMouseButton))
+            {
+                ClearDragState();
+                RefreshVisualState();
+                return;
+            }
+
+            // RMB: system drag won't work — just cancel the preview cleanly.
+            if (_dragMouseButton == 1)
+            {
+                ClearDragState();
+                RefreshVisualState();
+                return;
+            }
+
+            var started = _mode == Mode.DragExternal
+                ? TryStartExternalDragFromPreview()
+                : TryStartExternalDragFromCurrentDrag();
+
+            if (started)
             {
                 ClearDragState();
                 RefreshVisualState();
@@ -1557,9 +1734,22 @@ namespace PrefabBoard.Editor.UI
             _dragGhost.style.display = DisplayStyle.Flex;
         }
 
+        private void UpdateExternalDragGhost(Vector2 mouseScreen)
+        {
+            var width = Mathf.Max(12f, _externalGhostSize.x);
+            var height = Mathf.Max(12f, _externalGhostSize.y);
+            _dragGhost.style.left = mouseScreen.x - _externalGhostPointerOffset.x;
+            _dragGhost.style.top = mouseScreen.y - _externalGhostPointerOffset.y;
+            _dragGhost.style.width = width;
+            _dragGhost.style.height = height;
+            _dragGhost.style.display = DisplayStyle.Flex;
+            _dragGhost.style.opacity = 0.5f;
+        }
+
         private void HideDragGhost()
         {
             _dragGhost.style.display = DisplayStyle.None;
+            _dragGhost.style.opacity = 1f;
         }
 
         private static Rect RectFromPoints(Vector2 a, Vector2 b)
@@ -1570,6 +1760,49 @@ namespace PrefabBoard.Editor.UI
         private static Rect Expand(Rect a, Rect b)
         {
             return Rect.MinMaxRect(Mathf.Min(a.xMin, b.xMin), Mathf.Min(a.yMin, b.yMin), Mathf.Max(a.xMax, b.xMax), Mathf.Max(a.yMax, b.yMax));
+        }
+
+        private bool TryStartExternalDragFromPreview()
+        {
+            if (_board == null || string.IsNullOrEmpty(_dragPrimaryItemId))
+            {
+                return false;
+            }
+
+            var dragItems = BuildExternalDragItems();
+            return StartExternalDrag(dragItems);
+        }
+
+        private List<BoardItemData> BuildExternalDragItems()
+        {
+            var result = new List<BoardItemData>();
+            if (_board == null)
+            {
+                return result;
+            }
+
+            if (_selectedItems.Contains(_dragPrimaryItemId))
+            {
+                foreach (var id in _selectedItems)
+                {
+                    var item = FindItem(id);
+                    if (item != null)
+                    {
+                        result.Add(item);
+                    }
+                }
+            }
+
+            if (result.Count == 0)
+            {
+                var primary = FindItem(_dragPrimaryItemId);
+                if (primary != null)
+                {
+                    result.Add(primary);
+                }
+            }
+
+            return result;
         }
 
         private static VisualElement CreateLayer(string className, bool picking)
