@@ -1,17 +1,19 @@
 ﻿# Progress
 
 ## What Works
-- Core board editor is stable.
-- `Ctrl+LMB` external drag path has visual ghost and move handling.
-- External drag fallback now covers both drag modes (`DragItems`, `DragExternal`).
+- PrefabBoard implementation is now a standalone UPM package (`com.gladfox.prefabboard`).
+- Unity project tracked structure is converted to `Demo/` and points to local package dependency.
+- Core editor scripts/assets moved with meta files to preserve serialization GUID continuity.
 
 ## Known Issues
-- Requires Unity manual verification for full drag/drop UX.
-- No automated interaction tests.
+- Manual Unity validation is required after migration (package resolution + runtime editor interactions).
+- The old local folder `PrefabBoard/` may still exist in workspace with non-tracked generated files (`Library`, `Logs`, `obj`, `.sln`) and is no longer the tracked project root.
 
 ## Solution Evolution
-- Restored window-exit fallback for `Mode.DragExternal` to prevent missed drag starts when cursor leaves board window.
+- Replaced monolithic project-embedded tool layout with package + demo split.
+- Added package-level metadata (`package.json`, package README).
+- Added package stylesheet path fallback logic for backward compatibility.
 
 ## Change Control
-- last_checked_commit: c25b38b
-- last_checked_date: 2026-03-02
+- last_checked_commit: ec347ae
+- last_checked_date: 2026-03-05

@@ -1,0 +1,17 @@
+{
+  "name": "com.gladfox.prefabboard",
+  "displayName": "PrefabBoard",
+  "version": "0.2.0",
+  "unity": "2021.3",
+  "description": "Editor-only prefab board tool for visual organization and drag-and-drop prefab workflows.",
+  "keywords": [
+    "editor",
+    "prefab",
+    "board",
+    "uitoolkit"
+  ],
+  "license": "MIT",
+  "author": {
+    "name": "GladFox"
+  }
+}

@@ -14,12 +14,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp-Editor::PrefabBoard.Editor.Data.PrefabBoardAsset
   boardId: a2ac1baa245b4d6f95629c67f2a073e8
   boardName: Main Board
-  pan: {x: 186.84624, y: 195.92761}
-  zoom: 0.13349435
+  pan: {x: 262.35376, y: 250.17517}
+  zoom: 0.15571067
   items:
   - id: d8351f194a884b7e86f3135159f77d9f
     prefabGuid: e3d31ff64e017b0478bc10f20bb26c68
-    position: {x: -960, y: -1152}
+    position: {x: -1024, y: -1152}
     size: {x: 1280, y: 2208}
     titleOverride: 
     note: 
@@ -29,7 +29,17 @@ MonoBehaviour:
     previewRenderMode: 0
   - id: e2329c00bc8741778649d124d8a789ca
     prefabGuid: a8b41dd92ad6c41489e90ad424880264
-    position: {x: 576, y: -1024}
+    position: {x: 320, y: -1088}
+    size: {x: 300, y: 160}
+    titleOverride: 
+    note: 
+    tagColor: {r: 0, g: 0, b: 0, a: 0}
+    tags: []
+    groupId: 
+    previewRenderMode: 0
+  - id: 9c66b35bc8da43f3962020791c04a2fd
+    prefabGuid: a8b41dd92ad6c41489e90ad424880264
+    position: {x: 704, y: -1088}
     size: {x: 300, y: 160}
     titleOverride: 
     note: 
@@ -42,8 +52,8 @@ MonoBehaviour:
     name: Main
     rect:
       serializedVersion: 2
-      x: -1085.4225
-      y: -1371.8005
+      x: -1109.3936
+      y: -1395.7719
       width: 3284.8057
       height: 3907.2812
     color: {r: 0.2, g: 0.5, b: 0.9, a: 0.18}

@@ -9,7 +9,8 @@ namespace PrefabBoard.Editor.UI
 {
     public sealed class PrefabBoardWindow : EditorWindow
     {
-        private const string StylePath = "Assets/Editor/PrefabBoard/Styles/PrefabBoard.uss";
+        private const string PackageStylePath = "Packages/com.gladfox.prefabboard/Editor/Styles/PrefabBoard.uss";
+        private const string LegacyStylePath = "Assets/Editor/PrefabBoard/Styles/PrefabBoard.uss";
         private static PrefabBoardAsset s_pendingBoardToOpen;
 
         private List<PrefabBoardAsset> _boards = new List<PrefabBoardAsset>();
@@ -88,7 +89,11 @@ namespace PrefabBoard.Editor.UI
             rootVisualElement.Clear();
             rootVisualElement.style.flexDirection = FlexDirection.Column;
 
-            var style = AssetDatabase.LoadAssetAtPath<StyleSheet>(StylePath);
+            var style = AssetDatabase.LoadAssetAtPath<StyleSheet>(PackageStylePath);
+            if (style == null)
+            {
+                style = AssetDatabase.LoadAssetAtPath<StyleSheet>(LegacyStylePath);
+            }
             if (style != null)
             {
                 rootVisualElement.styleSheets.Add(style);

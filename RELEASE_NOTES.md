@@ -1,5 +1,23 @@
 # Release Notes
 
+## v0.2.0 - March 5, 2026
+
+### Highlights
+- Migrated PrefabBoard implementation into a UPM package:
+  - `Packages/com.gladfox.prefabboard`
+  - editor code moved under package `Editor/` (`Data`, `Services`, `UI`, `Styles`)
+- Converted tracked Unity project layout to Demo project:
+  - project root moved from `PrefabBoard/` to `Demo/`
+  - demo now references package via local file dependency:
+    - `com.gladfox.prefabboard`: `file:../../Packages/com.gladfox.prefabboard`
+- Updated stylesheet loading in `PrefabBoardWindow`:
+  - primary path from package
+  - legacy `Assets/...` fallback retained
+
+### Notes
+- Demo-specific assets remain in `Demo/Assets` (boards, prefabs, preview rig settings).
+- Tool behavior remains editor-only and functionally aligned with previous MVP scope.
+
 ## v0.1.1 - March 5, 2026
 
 ### Highlights

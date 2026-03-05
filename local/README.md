@@ -1,7 +1,7 @@
 ﻿# PrefabBoard Architecture
 
 ## Status
-MVP implementation in progress (`feat/tz-alignment`). Current version: `v0.1.0`.
+MVP implementation in progress. Current version: `v0.2.0`.
 
 ## Scope
 Editor-only инструмент `Prefab Board` на Unity UI Toolkit:
@@ -13,13 +13,13 @@ Editor-only инструмент `Prefab Board` на Unity UI Toolkit:
 - поддержка нескольких досок через отдельные board-файлы (`*.asset`)
 
 ## Repository Structure
-- `PrefabBoard/Assets/Editor/PrefabBoard/Data`
+- `Packages/com.gladfox.prefabboard/Editor/Data`
   - `PrefabBoardAsset`
   - `BoardItemData`
   - `BoardGroupData`
   - `BoardViewSettings`
   - `PreviewRigSettingsAsset`
-- `PrefabBoard/Assets/Editor/PrefabBoard/Services`
+- `Packages/com.gladfox.prefabboard/Editor/Services`
   - `BoardRepository`
   - `AssetGuidUtils`
   - `PreviewCache`
@@ -28,7 +28,7 @@ Editor-only инструмент `Prefab Board` на Unity UI Toolkit:
   - `PreviewDebugCapture`
   - `GameViewResolutionUtils`
   - `BoardUndo`
-- `PrefabBoard/Assets/Editor/PrefabBoard/UI`
+- `Packages/com.gladfox.prefabboard/Editor/UI`
   - `PrefabBoardWindow`
   - `BoardCanvasElement`
   - `BoardOutlineElement`
@@ -38,8 +38,11 @@ Editor-only инструмент `Prefab Board` на Unity UI Toolkit:
   - `GroupFrameElement`
   - `SelectionOverlayElement`
   - `BoardToolbarElement`
-- `PrefabBoard/Assets/Editor/PrefabBoard/Styles`
+- `Packages/com.gladfox.prefabboard/Editor/Styles`
   - `PrefabBoard.uss`
+- `Demo/`
+  - Unity demo project consuming `com.gladfox.prefabboard` via local file dependency
+  - demo assets, boards and preview rig settings in `Demo/Assets/...`
 
 ## Data Model
 ### PrefabBoardAsset
@@ -123,7 +126,7 @@ Canvas и карточки клиппируются по своим границ
 ## Preview Rig Configuration
 Источник preview rig настраивается через asset `PreviewRigSettings`:
 - меню: `Tools/PrefabBoard/Preview Rig Settings`
-- путь по умолчанию: `Assets/Editor/PrefabBoard/Settings/PreviewRigSettings.asset`
+- путь по умолчанию (в Demo): `Demo/Assets/Editor/PrefabBoard/Settings/PreviewRigSettings.asset`
 
 Поддерживаемые источники:
 - `BuiltIn`: камера/canvas/content создаются кодом (fallback по умолчанию)

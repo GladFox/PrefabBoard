@@ -1,57 +1,64 @@
-﻿# Unity .gitignore for nested project in /PrefabBoard
+# Unity repo layout: Demo project + optional legacy PrefabBoard local folder
 
+/Demo/[Ll]ibrary/
+/Demo/[Tt]emp/
+/Demo/[Oo]bj/
+/Demo/[Bb]uild/
+/Demo/[Bb]uilds/
+/Demo/[Ll]ogs/
+/Demo/[Uu]ser[Ss]ettings/
+/Demo/[Mm]emoryCaptures/
+/Demo/[Rr]ecordings/
+/Demo/ExportedObj/
+/Demo/.vs/
+/Demo/.gradle/
+/Demo/.idea/
+/Demo/.consulo/
+/Demo/*.csproj
+/Demo/*.unityproj
+/Demo/*.sln
+/Demo/*.suo
+/Demo/*.tmp
+/Demo/*.user
+/Demo/*.userprefs
+/Demo/*.pidb
+/Demo/*.booproj
+/Demo/*.svd
+/Demo/*.pdb
+/Demo/*.mdb
+/Demo/*.opendb
+/Demo/*.VC.db
+/Demo/*.log
+/Demo/sysinfo.txt
+/Demo/mono_crash.*
+/Demo/crashlytics-build.properties
+/Demo/*.apk
+/Demo/*.aab
+/Demo/*.app
+/Demo/*.unitypackage
+/Demo/*.unitypackage.meta
+/Demo/ServerData/
+/Demo/[Aa]ssets/StreamingAssets/aa*
+/Demo/[Aa]ssets/AddressableAssetsData/link.xml*
+/Demo/[Aa]ssets/Addressables_Temp*
+/Demo/[Aa]ssets/AddressableAssetsData/*/*.bin*
+/Demo/[Aa]ssets/Unity.VisualScripting.Generated/VisualScripting.Flow/UnitOptions.db
+/Demo/[Aa]ssets/Unity.VisualScripting.Generated/VisualScripting.Flow/UnitOptions.db.meta
+/Demo/[Aa]ssets/Unity.VisualScripting.Generated/VisualScripting.Core/Property Providers
+/Demo/[Aa]ssets/Unity.VisualScripting.Generated/VisualScripting.Core/Property Providers.meta
+/Demo/[Aa]ssets/[Ii]nit[Tt]est[Ss]cene*.unity*
+
+# Legacy local folder (not tracked project root anymore)
 /[Pp]refab[Bb]oard/[Ll]ibrary/
 /[Pp]refab[Bb]oard/[Tt]emp/
 /[Pp]refab[Bb]oard/[Oo]bj/
-/[Pp]refab[Bb]oard/[Bb]uild/
-/[Pp]refab[Bb]oard/[Bb]uilds/
 /[Pp]refab[Bb]oard/[Ll]ogs/
 /[Pp]refab[Bb]oard/[Uu]ser[Ss]ettings/
-/[Pp]refab[Bb]oard/[Mm]emoryCaptures/
-/[Pp]refab[Bb]oard/[Rr]ecordings/
-/[Pp]refab[Bb]oard/ExportedObj/
-/[Pp]refab[Bb]oard/.vs/
-/[Pp]refab[Bb]oard/.gradle/
 /[Pp]refab[Bb]oard/.idea/
-/[Pp]refab[Bb]oard/.consulo/
-
 /[Pp]refab[Bb]oard/*.csproj
-/[Pp]refab[Bb]oard/*.unityproj
 /[Pp]refab[Bb]oard/*.sln
-/[Pp]refab[Bb]oard/*.suo
-/[Pp]refab[Bb]oard/*.tmp
-/[Pp]refab[Bb]oard/*.user
-/[Pp]refab[Bb]oard/*.userprefs
-/[Pp]refab[Bb]oard/*.pidb
-/[Pp]refab[Bb]oard/*.booproj
-/[Pp]refab[Bb]oard/*.svd
-/[Pp]refab[Bb]oard/*.pdb
-/[Pp]refab[Bb]oard/*.mdb
-/[Pp]refab[Bb]oard/*.opendb
-/[Pp]refab[Bb]oard/*.VC.db
-/[Pp]refab[Bb]oard/*.log
-/[Pp]refab[Bb]oard/sysinfo.txt
-/[Pp]refab[Bb]oard/mono_crash.*
-/[Pp]refab[Bb]oard/crashlytics-build.properties
-/[Pp]refab[Bb]oard/*.apk
-/[Pp]refab[Bb]oard/*.aab
-/[Pp]refab[Bb]oard/*.app
-/[Pp]refab[Bb]oard/*.unitypackage
-/[Pp]refab[Bb]oard/*.unitypackage.meta
 
 *.DotSettings.user
 *.pidb.meta
 *.pdb.meta
 *.mdb.meta
-
-/[Pp]refab[Bb]oard/ServerData/
-/[Pp]refab[Bb]oard/[Aa]ssets/StreamingAssets/aa*
-/[Pp]refab[Bb]oard/[Aa]ssets/AddressableAssetsData/link.xml*
-/[Pp]refab[Bb]oard/[Aa]ssets/Addressables_Temp*
-/[Pp]refab[Bb]oard/[Aa]ssets/AddressableAssetsData/*/*.bin*
-
-/[Pp]refab[Bb]oard/[Aa]ssets/Unity.VisualScripting.Generated/VisualScripting.Flow/UnitOptions.db
-/[Pp]refab[Bb]oard/[Aa]ssets/Unity.VisualScripting.Generated/VisualScripting.Flow/UnitOptions.db.meta
-/[Pp]refab[Bb]oard/[Aa]ssets/Unity.VisualScripting.Generated/VisualScripting.Core/Property Providers
-/[Pp]refab[Bb]oard/[Aa]ssets/Unity.VisualScripting.Generated/VisualScripting.Core/Property Providers.meta
-/[Pp]refab[Bb]oard/[Aa]ssets/[Ii]nit[Tt]est[Ss]cene*.unity*
