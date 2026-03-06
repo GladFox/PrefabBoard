@@ -14,33 +14,33 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp-Editor::PrefabBoard.Editor.Data.PrefabBoardAsset
   boardId: a2ac1baa245b4d6f95629c67f2a073e8
   boardName: Main Board
-  pan: {x: 262.35376, y: 250.17517}
-  zoom: 0.15571067
+  pan: {x: 141.16518, y: 652.05615}
+  zoom: 0.60064226
   items:
-  - id: d8351f194a884b7e86f3135159f77d9f
+  - id: f3e4faa634a9488782f5bcf53681d20f
+    prefabGuid: a8b41dd92ad6c41489e90ad424880264
+    position: {x: 128, y: -1152}
+    size: {x: 300, y: 160}
+    titleOverride: 
+    note: 
+    tagColor: {r: 0, g: 0, b: 0, a: 0}
+    tags: []
+    groupId: 
+    previewRenderMode: 0
+  - id: f1d12123ffc14569a1e812922a90afe2
+    prefabGuid: a8b41dd92ad6c41489e90ad424880264
+    position: {x: 128, y: -960}
+    size: {x: 300, y: 160}
+    titleOverride: 
+    note: 
+    tagColor: {r: 0, g: 0, b: 0, a: 0}
+    tags: []
+    groupId: 
+    previewRenderMode: 0
+  - id: 6fc0535a89d14fec81a5ff4b278c0c9d
     prefabGuid: e3d31ff64e017b0478bc10f20bb26c68
-    position: {x: -1024, y: -1152}
-    size: {x: 1280, y: 2208}
-    titleOverride: 
-    note: 
-    tagColor: {r: 0, g: 0, b: 0, a: 0}
-    tags: []
-    groupId: 
-    previewRenderMode: 0
-  - id: e2329c00bc8741778649d124d8a789ca
-    prefabGuid: a8b41dd92ad6c41489e90ad424880264
-    position: {x: 320, y: -1088}
-    size: {x: 300, y: 160}
-    titleOverride: 
-    note: 
-    tagColor: {r: 0, g: 0, b: 0, a: 0}
-    tags: []
-    groupId: 
-    previewRenderMode: 0
-  - id: 9c66b35bc8da43f3962020791c04a2fd
-    prefabGuid: a8b41dd92ad6c41489e90ad424880264
-    position: {x: 704, y: -1088}
-    size: {x: 300, y: 160}
+    position: {x: -20.253895, y: -620.22186}
+    size: {x: 1080, y: 1920}
     titleOverride: 
     note: 
     tagColor: {r: 0, g: 0, b: 0, a: 0}
