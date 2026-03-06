@@ -13,10 +13,12 @@
 ## Solution Evolution
 - Tried preview-scene-based renderer, but it proved unsuitable for stable uGUI preview output in target prefabs.
 - Rolled renderer back to additive temporary scene flow for ScreenSpace/WorldSpace preview passes.
-- Hardened BuiltIn preview canvas behavior by forcing `ScreenSpaceCamera` for texture rendering pass.
+- Compared current package renderer against pre-UPM working code and isolated regression cause to post-migration BuiltIn profile override logic, not the UPM move itself.
+- Removed BuiltIn template profile override path (`ApplyBuiltInTemplateRigProfile`) to restore pre-UPM sizing behavior.
+- Kept BuiltIn configurable settings introduced later (`builtInBaseResolution`, `builtInCameraBackground`) without geometry overrides.
 - Expanded drag-to-board resolver to map hierarchy/prefab-stage objects back to source prefab asset GUID.
 - New constraint captured: PreviewScene-based render path did not solve uGUI preview correctness, so renderer strategy must revert to non-PreviewScene approach for stable results.
 
 ## Change Control
-- last_checked_commit: b4cc7f5
+- last_checked_commit: da4664e
 - last_checked_date: 2026-03-06
