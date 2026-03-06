@@ -711,6 +711,7 @@ namespace PrefabBoard.Editor.Services
         {
             Scene previewScene = default;
             var sceneCreated = false;
+            var previousActiveScene = SceneManager.GetActiveScene();
 
             GameObject instance = null;
             PreviewRigObjects rig = null;
@@ -720,24 +721,18 @@ namespace PrefabBoard.Editor.Services
 
             try
             {
-                previewScene = EditorSceneManager.NewPreviewScene();
-                sceneCreated = previewScene.IsValid();
+                previewScene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Additive);
+                sceneCreated = true;
+                SceneManager.SetActiveScene(previewScene);
 
-                instance = PrefabUtility.InstantiatePrefab(prefabAsset, previewScene) as GameObject;
-                if (instance == null)
-                {
-                    instance = Object.Instantiate(prefabAsset);
-                    if (instance != null)
-                    {
-                        SceneManager.MoveGameObjectToScene(instance, previewScene);
-                    }
-                }
+                instance = Object.Instantiate(prefabAsset);
 
                 if (instance == null)
                 {
                     return null;
                 }
 
+                SceneManager.MoveGameObjectToScene(instance, previewScene);
                 instance.hideFlags = HideFlags.HideAndDontSave;
                 instance.transform.position = Vector3.zero;
                 instance.transform.rotation = Quaternion.identity;
@@ -811,7 +806,12 @@ namespace PrefabBoard.Editor.Services
 
                 if (sceneCreated)
                 {
-                    EditorSceneManager.ClosePreviewScene(previewScene);
+                    if (previousActiveScene.IsValid())
+                    {
+                        SceneManager.SetActiveScene(previousActiveScene);
+                    }
+
+                    EditorSceneManager.CloseScene(previewScene, true);
                 }
             }
         }
@@ -823,6 +823,7 @@ namespace PrefabBoard.Editor.Services
         {
             Scene previewScene = default;
             var sceneCreated = false;
+            var previousActiveScene = SceneManager.GetActiveScene();
 
             GameObject instance = null;
             GameObject cameraObject = null;
@@ -832,24 +833,18 @@ namespace PrefabBoard.Editor.Services
 
             try
             {
-                previewScene = EditorSceneManager.NewPreviewScene();
-                sceneCreated = previewScene.IsValid();
+                previewScene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Additive);
+                sceneCreated = true;
+                SceneManager.SetActiveScene(previewScene);
 
-                instance = PrefabUtility.InstantiatePrefab(prefabAsset, previewScene) as GameObject;
-                if (instance == null)
-                {
-                    instance = Object.Instantiate(prefabAsset);
-                    if (instance != null)
-                    {
-                        SceneManager.MoveGameObjectToScene(instance, previewScene);
-                    }
-                }
+                instance = Object.Instantiate(prefabAsset);
 
                 if (instance == null)
                 {
                     return null;
                 }
 
+                SceneManager.MoveGameObjectToScene(instance, previewScene);
                 instance.hideFlags = HideFlags.HideAndDontSave;
                 instance.transform.position = Vector3.zero;
                 instance.transform.rotation = Quaternion.identity;
@@ -931,7 +926,12 @@ namespace PrefabBoard.Editor.Services
 
                 if (sceneCreated)
                 {
-                    EditorSceneManager.ClosePreviewScene(previewScene);
+                    if (previousActiveScene.IsValid())
+                    {
+                        SceneManager.SetActiveScene(previousActiveScene);
+                    }
+
+                    EditorSceneManager.CloseScene(previewScene, true);
                 }
             }
         }
