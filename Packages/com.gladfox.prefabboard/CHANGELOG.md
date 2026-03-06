@@ -2,6 +2,13 @@
 
 All notable changes to this package are documented in this file.
 
+## [0.2.2] - 2026-03-06
+
+### Changed
+- Rolled UI preview renderer back from `PreviewScene` to additive temporary scene flow.
+- Restored pre-UPM BuiltIn preview sizing behavior by removing template profile geometry overrides.
+- Added drag-to-board support for prefab instances from Prefab Mode and Hierarchy.
+
 ## [0.2.1] - 2026-03-06
 
 ### Added

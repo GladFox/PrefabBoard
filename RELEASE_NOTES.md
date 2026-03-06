@@ -1,5 +1,12 @@
 # Release Notes
 
+## v0.2.2 - March 6, 2026
+
+### Highlights
+- Fixed preview renderer lifecycle by rolling back from `PreviewScene` path to additive temporary scene flow for UI previews.
+- Restored pre-UPM BuiltIn sizing behavior by removing the template profile geometry override in preview rendering.
+- Improved board drag-in support for prefab instances from Prefab Mode/Hierarchy (not only prefab assets from Project).
+
 ## v0.2.1 - March 5, 2026
 
 ### Highlights
