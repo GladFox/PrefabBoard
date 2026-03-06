@@ -711,7 +711,6 @@ namespace PrefabBoard.Editor.Services
         {
             Scene previewScene = default;
             var sceneCreated = false;
-            var previousActiveScene = SceneManager.GetActiveScene();
 
             GameObject instance = null;
             PreviewRigObjects rig = null;
@@ -721,17 +720,24 @@ namespace PrefabBoard.Editor.Services
 
             try
             {
-                previewScene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Additive);
-                sceneCreated = true;
-                SceneManager.SetActiveScene(previewScene);
+                previewScene = EditorSceneManager.NewPreviewScene();
+                sceneCreated = previewScene.IsValid();
 
-                instance = Object.Instantiate(prefabAsset);
+                instance = PrefabUtility.InstantiatePrefab(prefabAsset, previewScene) as GameObject;
+                if (instance == null)
+                {
+                    instance = Object.Instantiate(prefabAsset);
+                    if (instance != null)
+                    {
+                        SceneManager.MoveGameObjectToScene(instance, previewScene);
+                    }
+                }
+
                 if (instance == null)
                 {
                     return null;
                 }
 
-                SceneManager.MoveGameObjectToScene(instance, previewScene);
                 instance.hideFlags = HideFlags.HideAndDontSave;
                 instance.transform.position = Vector3.zero;
                 instance.transform.rotation = Quaternion.identity;
@@ -805,12 +811,7 @@ namespace PrefabBoard.Editor.Services
 
                 if (sceneCreated)
                 {
-                    if (previousActiveScene.IsValid())
-                    {
-                        SceneManager.SetActiveScene(previousActiveScene);
-                    }
-
-                    EditorSceneManager.CloseScene(previewScene, true);
+                    EditorSceneManager.ClosePreviewScene(previewScene);
                 }
             }
         }
@@ -822,7 +823,6 @@ namespace PrefabBoard.Editor.Services
         {
             Scene previewScene = default;
             var sceneCreated = false;
-            var previousActiveScene = SceneManager.GetActiveScene();
 
             GameObject instance = null;
             GameObject cameraObject = null;
@@ -832,17 +832,24 @@ namespace PrefabBoard.Editor.Services
 
             try
             {
-                previewScene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Additive);
-                sceneCreated = true;
-                SceneManager.SetActiveScene(previewScene);
+                previewScene = EditorSceneManager.NewPreviewScene();
+                sceneCreated = previewScene.IsValid();
 
-                instance = Object.Instantiate(prefabAsset);
+                instance = PrefabUtility.InstantiatePrefab(prefabAsset, previewScene) as GameObject;
+                if (instance == null)
+                {
+                    instance = Object.Instantiate(prefabAsset);
+                    if (instance != null)
+                    {
+                        SceneManager.MoveGameObjectToScene(instance, previewScene);
+                    }
+                }
+
                 if (instance == null)
                 {
                     return null;
                 }
 
-                SceneManager.MoveGameObjectToScene(instance, previewScene);
                 instance.hideFlags = HideFlags.HideAndDontSave;
                 instance.transform.position = Vector3.zero;
                 instance.transform.rotation = Quaternion.identity;
@@ -924,12 +931,7 @@ namespace PrefabBoard.Editor.Services
 
                 if (sceneCreated)
                 {
-                    if (previousActiveScene.IsValid())
-                    {
-                        SceneManager.SetActiveScene(previousActiveScene);
-                    }
-
-                    EditorSceneManager.CloseScene(previewScene, true);
+                    EditorSceneManager.ClosePreviewScene(previewScene);
                 }
             }
         }
@@ -1166,7 +1168,7 @@ namespace PrefabBoard.Editor.Services
                 return;
             }
 
-            targetCanvas.renderMode = sourceCanvas.renderMode;
+            targetCanvas.renderMode = RenderMode.ScreenSpaceCamera;
             targetCanvas.pixelPerfect = sourceCanvas.pixelPerfect;
             targetCanvas.planeDistance = Mathf.Max(0.01f, sourceCanvas.planeDistance);
             targetCanvas.worldCamera = targetCamera;

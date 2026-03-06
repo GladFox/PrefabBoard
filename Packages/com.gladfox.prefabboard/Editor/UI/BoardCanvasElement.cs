@@ -691,9 +691,10 @@ namespace PrefabBoard.Editor.UI
             BoardUndo.Record(_board, "Add Prefabs");
             foreach (var obj in DragAndDrop.objectReferences)
             {
-                if (!AssetGuidUtils.IsPrefabAsset(obj)) continue;
-                var guid = AssetGuidUtils.GuidFromObject(obj);
-                if (string.IsNullOrEmpty(guid)) continue;
+                if (!AssetGuidUtils.TryResolvePrefabGuid(obj, out var guid) || string.IsNullOrEmpty(guid))
+                {
+                    continue;
+                }
                 var item = BoardItemData.Create(guid, world + new Vector2(offset * 24f, offset * 24f));
                 item.size = PreviewCache.ResolvePreferredBoardItemSize(guid, previewResolution);
                 item.previewRenderMode = BoardItemPreviewRenderMode.Auto;
@@ -1487,7 +1488,9 @@ namespace PrefabBoard.Editor.UI
             BoardDataChanged?.Invoke();
         }
 
-        private bool HasDraggedPrefabs() => DragAndDrop.objectReferences != null && DragAndDrop.objectReferences.Any(AssetGuidUtils.IsPrefabAsset);
+        private bool HasDraggedPrefabs() =>
+            DragAndDrop.objectReferences != null &&
+            DragAndDrop.objectReferences.Any(obj => AssetGuidUtils.TryResolvePrefabGuid(obj, out _));
 
         private BoardItemData FindItem(string id) => _board?.items.Find(x => x != null && x.id == id);
         private BoardGroupData FindGroup(string id) => _board?.groups.Find(x => x != null && x.id == id);

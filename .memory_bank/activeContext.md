@@ -1,22 +1,23 @@
 # Active Context
 
 ## Current Tasks
-1. Finalize UPM metadata so Unity Package Manager shows package version `0.2.1`.
-2. Add package-local `CHANGELOG.md` and `LICENSE.md` and wire UPM links in `package.json`.
-3. Keep Demo project local changes out of package-only release commit.
+1. Fix ScreenSpace UI preview failure when an untitled unsaved scene is open.
+2. Restore reliable uGUI rendering in BuiltIn preview mode.
+3. Support Project/Prefab Mode/Hierarchy drag sources when dropping prefabs onto the board.
+4. Keep Demo-local scene/settings changes out of package bugfix commit.
 
 ## Recent Changes
-- Updated `Packages/com.gladfox.prefabboard/package.json`:
-  - bumped package version to `0.2.1`
-  - added `documentationUrl`, `changelogUrl`, `licensesUrl`
-- Added package files:
-  - `Packages/com.gladfox.prefabboard/CHANGELOG.md`
-  - `Packages/com.gladfox.prefabboard/LICENSE.md`
-- Added Unity meta files for new package docs:
-  - `CHANGELOG.md.meta`
-  - `LICENSE.md.meta`
+- `PreviewCache` preview scene lifecycle switched to `EditorSceneManager.NewPreviewScene()`/`ClosePreviewScene()` for both ScreenSpace and WorldSpace custom preview passes.
+- BuiltIn rig profile application now keeps preview canvas in `RenderMode.ScreenSpaceCamera` to ensure camera-based UI rendering to RenderTexture.
+- Added robust prefab source resolution in `AssetGuidUtils`:
+  - `TryResolvePrefabAsset(Object, out GameObject)`
+  - `TryResolvePrefabGuid(Object, out string)`
+- `BoardCanvasElement` drag-in path now accepts prefab instances (from Prefab Mode/Hierarchy), not only prefab assets from Project.
 
 ## Next Steps
-1. Commit only package metadata/doc updates (exclude Demo local edits).
-2. Push release patch to `main`.
-3. In Unity, reopen Package Manager and validate version + changelog/license links in package details.
+1. Verify in Unity:
+   - no ScreenSpace preview exception with unsaved scene,
+   - Dialog/Button previews render in BuiltIn mode,
+   - drag from opened prefab hierarchy to board creates cards.
+2. Commit package-only bugfix changes.
+3. Push to `main` and prepare release note entry if requested.

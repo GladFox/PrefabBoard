@@ -1,22 +1,19 @@
 # Progress
 
 ## What Works
-- UPM package metadata now targets Unity display requirements for release `0.2.1`.
-- Package root now includes `CHANGELOG.md` and `LICENSE.md` files.
-- Package metadata includes explicit UPM links:
-  - `documentationUrl`
-  - `changelogUrl`
-  - `licensesUrl`
-- Unity `.meta` files exist for newly added package docs to avoid immutable-folder import warnings.
+- UPM metadata for `0.2.1` is already in package and visible through package links.
+- Package now includes local `CHANGELOG.md` and `LICENSE.md` with `.meta` files.
+- Drag payload resolution now supports prefab assets and prefab instances as board input sources.
 
 ## Known Issues
-- Demo project local files (`manifest`, `packages-lock`, `ProjectSettings`) may still be dirty from editor sessions and are intentionally excluded from package-only release commits.
+- Unity-side visual smoke test still required after latest preview pipeline patch (cannot be executed from CLI here).
+- Demo project files can become dirty during editor sessions and are intentionally excluded from targeted package commits.
 
 ## Solution Evolution
-- Synced package version from stale `0.2.0` to `0.2.1`.
-- Added package-scoped changelog/license artifacts for UPM consumption.
-- Wired GitHub URLs in `package.json` to ensure Package Manager links resolve from git dependency installs.
+- Replaced additive temporary scene creation in preview renderer with preview scenes, removing dependency on current unsaved scene state.
+- Hardened BuiltIn preview canvas behavior by forcing `ScreenSpaceCamera` for texture rendering pass.
+- Expanded drag-to-board resolver to map hierarchy/prefab-stage objects back to source prefab asset GUID.
 
 ## Change Control
-- last_checked_commit: 37bb3fd
+- last_checked_commit: 017ade2
 - last_checked_date: 2026-03-06
