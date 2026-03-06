@@ -1,20 +1,22 @@
-﻿# Progress
+# Progress
 
 ## What Works
-- UPM package import path and metadata are in place.
-- BuiltIn preview mode now has dedicated configurable settings:
-  - base resolution
-  - camera background color
-- BuiltIn preview rendering pipeline reads these settings during rig/camera setup.
+- UPM package metadata now targets Unity display requirements for release `0.2.1`.
+- Package root now includes `CHANGELOG.md` and `LICENSE.md` files.
+- Package metadata includes explicit UPM links:
+  - `documentationUrl`
+  - `changelogUrl`
+  - `licensesUrl`
+- Unity `.meta` files exist for newly added package docs to avoid immutable-folder import warnings.
 
 ## Known Issues
-- Unity-side verification is still required for final visual parity and UX confirmation.
-- Local Demo project files (`manifest/project settings`) may change during editor operations and are not automatically included in targeted fix commits.
+- Demo project local files (`manifest`, `packages-lock`, `ProjectSettings`) may still be dirty from editor sessions and are intentionally excluded from package-only release commits.
 
 ## Solution Evolution
-- Extended settings model with BuiltIn-only preview controls.
-- Wired BuiltIn settings into resolution and camera background resolution logic in preview renderer.
+- Synced package version from stale `0.2.0` to `0.2.1`.
+- Added package-scoped changelog/license artifacts for UPM consumption.
+- Wired GitHub URLs in `package.json` to ensure Package Manager links resolve from git dependency installs.
 
 ## Change Control
-- last_checked_commit: 0abebcb
-- last_checked_date: 2026-03-05
+- last_checked_commit: 37bb3fd
+- last_checked_date: 2026-03-06
