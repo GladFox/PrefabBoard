@@ -716,7 +716,16 @@ namespace PrefabBoard.Editor.UI
         {
             if (_board == null) return;
             Focus();
-            SelectItem(card.ItemId, evt.shiftKey || evt.ctrlKey || evt.commandKey);
+
+            // For board drag gestures (RMB / Ctrl+LMB), keep the existing multi-selection
+            // when the drag starts on an already selected item.
+            var keepSelection = _selectedItems.Count > 1 && _selectedItems.Contains(card.ItemId);
+            if (!keepSelection)
+            {
+                _selectedItems.Clear();
+                _selectedItems.Add(card.ItemId);
+            }
+            _selectedGroupId = null;
 
             _dragStartItemPos.Clear();
             var ids = _selectedItems.Contains(card.ItemId) ? _selectedItems : new HashSet<string> { card.ItemId };

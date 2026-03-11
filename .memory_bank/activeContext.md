@@ -1,14 +1,15 @@
 # Active Context
 
 ## Current Tasks
-1. Publish release metadata for `v0.2.2` (root `VERSION`, package version, release notes).
+1. Publish release metadata for `v0.2.3` (root `VERSION`, package version, release notes).
 2. Keep non-PreviewScene rendering path for uGUI previews and preserve restored BuiltIn sizing behavior.
 3. Keep support for Project/Prefab Mode/Hierarchy drag sources when dropping prefabs onto the board.
 4. Track Demo-local scene/settings changes separately from package-only release commits.
 
 ## Recent Changes
-- Prepared release bump to `0.2.2` in root and package metadata.
-- Added `v0.2.2` entries to root `RELEASE_NOTES.md` and package `CHANGELOG.md`.
+- Multi-selection drag fix in BoardCanvasElement: dragging one selected card now moves all selected cards on board.
+- Prepared release bump to `0.2.3` in root and package metadata.
+- Added `v0.2.3` entries to root `RELEASE_NOTES.md` and package `CHANGELOG.md`.
 - `PreviewCache` preview render path was rolled back from `PreviewScene API` to additive temporary scene flow (`NewScene(...Additive)` + `CloseScene`).
 - Root-cause analysis against pre-UPM code: UPM migration itself was not the functional regression source for sizing.
 - Found regression source: post-migration `ApplyBuiltInTemplateRigProfile` override (camera/canvas/scaler transforms copied from `Rig.prefab`) broke size behavior.

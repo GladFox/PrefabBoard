@@ -1,5 +1,11 @@
 # Release Notes
 
+## v0.2.3 - March 6, 2026
+
+### Highlights
+- Fixed board drag behavior for multi-selection: dragging one selected card now moves all selected cards together.
+- Kept external drag behavior unchanged while fixing internal board drag grouping logic.
+
 ## v0.2.2 - March 6, 2026
 
 ### Highlights

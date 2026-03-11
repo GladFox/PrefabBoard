@@ -1,7 +1,7 @@
 # Progress
 
 ## What Works
-- UPM metadata is now prepared for `0.2.2` in package and root version file.
+- UPM metadata is now prepared for `0.2.3` in package and root version file.
 - Package now includes local `CHANGELOG.md` and `LICENSE.md` with `.meta` files.
 - Drag payload resolution now supports prefab assets and prefab instances as board input sources.
 
@@ -11,6 +11,7 @@
 - Demo project files can become dirty during editor sessions and are intentionally excluded from targeted package commits.
 
 ## Solution Evolution
+- Fixed board multi-selection drag so all selected cards move together during internal board drag.
 - Tried preview-scene-based renderer, but it proved unsuitable for stable uGUI preview output in target prefabs.
 - Rolled renderer back to additive temporary scene flow for ScreenSpace/WorldSpace preview passes.
 - Compared current package renderer against pre-UPM working code and isolated regression cause to post-migration BuiltIn profile override logic, not the UPM move itself.
@@ -20,5 +21,5 @@
 - New constraint captured: PreviewScene-based render path did not solve uGUI preview correctness, so renderer strategy must revert to non-PreviewScene approach for stable results.
 
 ## Change Control
-- last_checked_commit: 42cf69f
+- last_checked_commit: c185579
 - last_checked_date: 2026-03-06

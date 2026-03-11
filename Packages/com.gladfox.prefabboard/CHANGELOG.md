@@ -2,6 +2,11 @@
 
 All notable changes to this package are documented in this file.
 
+## [0.2.3] - 2026-03-06
+
+### Fixed
+- Multi-selection drag on board now moves all selected cards instead of only the primary card.
+
 ## [0.2.2] - 2026-03-06
 
 ### Changed
